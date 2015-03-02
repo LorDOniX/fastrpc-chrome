@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<style>
+			body {
+				margin: 0;
+			}
+			#log div {
+				border-bottom: 1px solid #666;
+				font-family: monospace;
+				font-size: 13px;
+				padding: 2px;
+				color: #333;
+				cursor: pointer;
+			}
+
+			#clear {
+				position: fixed;
+				right: 0;
+				bottom: 0;
+				width: 30px;
+				height: 21px;
+				background-image: url(clear.png);
+				cursor: pointer;
+				border-right: 1px solid #cacaca;
+				border-top: 1px solid #cacaca;
+			}
+		</style>
+		<link rel="stylesheet" src="jquery.jsonview.css">
+	</head>
+	<body>
+		<div id="log"></div>
+		<div id="clear" title="Clear"></div>
+		<script src="jak.js"></script>
+		<script src="base64.js"></script>
+		<script src="frpc.js"></script>
+		<script src="panel.js"></script>
+		<script src="jquery-1.11.2.min.js"></script>
+		<script src="jquery.jsonview.js"></script>
+	</body>
+</html>
