@@ -191,7 +191,7 @@ document.querySelector("#log").addEventListener("click", function(e) {
 	w.document.head.innerHTML = '<style>' +
 	'pre { padding: 5px; margin: 5px; font-size: 14px; }' +
 	'.string { color: green; }' +
-	'.number { color: red; }' +
+	'.number { color: blue; }' +
 	'.boolean { color: blue; }' +
 	'.null { color: magenta; }' +
 	'.key { color: black; font-weight: bold; }' +
