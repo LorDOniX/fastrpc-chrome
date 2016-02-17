@@ -1,5 +1,4 @@
 var DATA = {};
-var RESPONSES = {};
 
 var formatCallParams = function(data) {
 	var arr = [];
@@ -38,12 +37,19 @@ var formatArrow = function(type) {
 	return node;
 }
 
-var requestLog = function(opt, conn) {
-	var row = document.createElement("div");
+var createRow = function(opt, replaceEl) {
+	var row = replaceEl || document.createElement("div");
+
+	if (replaceEl) {
+		row.innerHTML = "";
+	}
+
 	row.title = "Click to open in a window";
-	row.style.background = "#9CFF82";
-	row.setAttribute("data-type", "request");
-	row.setAttribute("data-conn", conn);
+	if (opt.type == "request") {
+		row.style.background = "#9CFF82";
+	}
+	row.setAttribute("data-type", opt.type);
+	row.setAttribute("data-conn", opt.conn);
 
 	opt = opt || {};
 
@@ -58,42 +64,51 @@ var requestLog = function(opt, conn) {
 		row.appendChild(document.createTextNode(" "));
 	}
 
-	var row2 = document.createElement("div");
-	row2.title = "Click to open in a window";
-	row2.setAttribute("data-type", "response");
-	row2.setAttribute("data-conn", conn);
-	row2.innerHTML = "Loading...";
+	return row;
+};
+
+var requestLog = function(dataItem) {
+	dataItem.request.el = createRow({
+		values: dataItem.request.values,
+		type: "request",
+		conn: dataItem.conn
+	});
+
+	dataItem.response.el = document.createElement("div");
+	dataItem.response.el.innerHTML = "Waiting for request...";
 
 	var logEl = document.querySelector("#log");
 
-	logEl.appendChild(row);
-	logEl.appendChild(row2);
+	logEl.appendChild(dataItem.request.el);
+	logEl.appendChild(dataItem.response.el);
 
 	document.body.scrollTop = document.body.scrollHeight;
-
-	return row2;
 }
 
-var responseRow = function(row, opt) {
-	opt = opt || {};
-
-	var ar = [].concat(opt.values || []);
-
-	row.innerHTML = "";
-
-	for (var i=0;i<ar.length;i++) {
-		var item = ar[i];
-		if (!item.nodeType) {
-			item = document.createTextNode(item);
-		}
-		row.appendChild(item);
-		row.appendChild(document.createTextNode(" "));
-	}
+var responseLog = function(dataItem) {
+	dataItem.response.el = createRow({
+		values: dataItem.response.values,
+		type: "response",
+		conn: dataItem.conn
+	}, dataItem.response.el);
 }
 
 var logRequest = function(data, conn) {
 	var arrow = formatArrow(0);
-	var dataItem;
+	var dataItem = {
+		conn: conn,
+		request: {
+			el: null,
+			values: null,
+			data: null,
+			method: ""
+		},
+		response: {
+			el: null,
+			values: null,
+			data: null
+		}
+	};
 
 	try {
 		var binary = JAK.Base64.atob(data.postData.text);
@@ -103,24 +118,17 @@ var logRequest = function(data, conn) {
 		method.innerHTML = parsed.method;
 
 		var callParams = formatCallParams(parsed.params);
-		dataItem = { values: ["[request]", arrow, data.url, method, callParams]};
-
-		DATA[conn + "_request"] = {
-			data: parsed.params,
-			item: dataItem
-		};
-
-		RESPONSES[conn] = requestLog(dataItem, conn);
+		
+		dataItem.request.values = ["FRPC", arrow, data.url, method, callParams];
+		dataItem.request.data = parsed.params;
+		dataItem.request.method = parsed.method;
 	} catch (e) {
-		dataItem = { values: ["[request]", arrow, data.url, formatException(e)]};
-
-		DATA[conn + "_request"] = {
-			data: e,
-			item: dataItem
-		};
-
-		RESPONSES[conn] = requestLog(dataItem, conn);
+		dataItem.requestvalues = ["FRPC", arrow, data.url, formatException(e)];
+		dataItem.data = e;
 	}
+
+	DATA[conn] = dataItem;
+	requestLog(dataItem);
 }
 
 var humanLength = function(size) {
@@ -141,35 +149,25 @@ var humanLength = function(size) {
 
 var logResponse = function(data, content, harEntry) {
 	var arrow = formatArrow(1);
-	var dataItem;
 	var conn = harEntry.connection;
+	var dataItem = DATA[conn];
 
 	try {
 		var decoded = atob(content);
 		var binary = JAK.Base64.atob(decoded);
 		var parsed = JAK.FRPC.parse(binary);
 
-		dataItem = { values: ["[response]", arrow, humanLength(data.bodySize)]};
-		dataItem2 = { values: ["[response]", arrow, harEntry.request.url, humanLength(data.bodySize)]};
+		var method = document.createElement("strong");
+		method.innerHTML = dataItem.request.method;
 
-		DATA[conn + "_response"] = {
-			data: parsed,
-			item: dataItem2
-		};
-
-		responseRow(RESPONSES[conn], dataItem);
+		dataItem.response.data = parsed;
+		dataItem.response.values = ["FRPC", arrow, harEntry.request.url, "|", method, humanLength(data.bodySize)];
 	} catch (e) {
-		dataItem = { values: ["[response]", arrow, formatException(e)]};
-		
-		ERRORS.push(content);
-
-		DATA[conn + "_response"] = {
-			data: e,
-			item: dataItem
-		};
-
-		responseRow(RESPONSES[conn], dataItem);
+		dataItem.response.data = e;
+		dataItem.response.values = ["FRPC", arrow, formatException(e)];
 	}
+
+	responseLog(dataItem);
 }
 
 var isFRPC = function(headers) {
@@ -228,17 +226,13 @@ chrome.devtools.network.getHAR(processItems);
 
 document.querySelector("#clear").addEventListener("click", function(e) {
 	DATA = {};
-	RESPONSES = {};
 	document.querySelector("#log").innerHTML = "";
-	e.preventDefault();
-	e.stopPropagation();
 });
 
 document.querySelector("#log").addEventListener("click", function(e) {
-	e.preventDefault();
-	e.stopPropagation();
 	var target = e.target;
 	var row = null;
+
 	while (target.parentNode) {
 		if (target.parentNode.id == "log") { row = target; }
 		target = target.parentNode;
@@ -247,54 +241,49 @@ document.querySelector("#log").addEventListener("click", function(e) {
 
 	var dataType = row.getAttribute("data-type") || "";
 	var dataConn = row.getAttribute("data-conn") || "";
-	var dataKey = dataConn + "_" + dataType;
 
-	if (!dataKey in DATA) return;
-	
-	var data = DATA[dataKey];
+	if (dataConn in DATA && DATA[dataConn][dataType]) {
+		var data = DATA[dataConn][dataType];
+		var w = window.open();
 
-	var str = JSON.stringify(data.data, null, "  ");
-	str = str.replace(/</g, "&lt;");
+		w.document.head.innerHTML = '<style>' +
+		'pre { padding: 5px; margin: 5px; font-size: 14px; }' +
+		'.string { color: green; }' +
+		'.number { color: blue; }' +
+		'.boolean { color: blue; }' +
+		'.null { color: magenta; }' +
+		'.key { color: black; font-weight: bold; }' +
+		'</style>';
 
-	var w = window.open();
+		var p = document.createElement("p");
+		p.style.fontSize = "20px";
+		var pInfo = document.createElement("span");
+		pInfo.innerHTML = "";
+		p.appendChild(pInfo);
 
-	w.document.head.innerHTML = '<style>' +
-	'pre { padding: 5px; margin: 5px; font-size: 14px; }' +
-	'.string { color: green; }' +
-	'.number { color: blue; }' +
-	'.boolean { color: blue; }' +
-	'.null { color: magenta; }' +
-	'.key { color: black; font-weight: bold; }' +
-	'</style>';
+		data.values.forEach(function(i) {
+			var span = document.createElement("span");
+			span.innerHTML = "";
+			span.style.marginLeft = "15px";
 
-	var p = document.createElement("p");
-	p.style.fontSize = "20px";
+			if (i.toString().indexOf("[object HTML") != -1) {
+				p.appendChild(i.cloneNode(true));
+			}
+			else {
+				var s = document.createElement("strong");
+				s.innerHTML = i;
+				p.appendChild(s);
+			}
 
-	var pInfo = document.createElement("span");
-	pInfo.innerHTML = "";
-	p.appendChild(pInfo);
+			p.appendChild(span);
+		});
 
-	data.item.values.forEach(function(i) {
-		var span = document.createElement("span");
-		span.innerHTML = "";
-		span.style.marginLeft = "15px";
+		w.document.body.appendChild(p);
 
-		if (i.toString().indexOf("[object HTML") != -1) {
-			p.appendChild(i);
-		}
-		else {
-			var s = document.createElement("strong");
-			s.innerHTML = i;
-			p.appendChild(s);
-		}
+		w.document.body.appendChild(document.createElement("hr"));
 
-		p.appendChild(span);
-	});
-	w.document.body.appendChild(p);
-
-	w.document.body.appendChild(document.createElement("hr"));
-
-	var pre = document.createElement("pre");
-	pre.innerHTML = syntaxHighlight(JSON.stringify(data.data, undefined, 4));
-	w.document.body.appendChild(pre);
+		var pre = document.createElement("pre");
+		pre.innerHTML = syntaxHighlight(JSON.stringify(data.data, undefined, 4));
+		w.document.body.appendChild(pre);
+	}
 });
