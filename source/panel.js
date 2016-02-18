@@ -1,4 +1,5 @@
 var DATA = [];
+var STACK = [];
 
 var formatCallParams = function(data) {
 	var arr = [];
@@ -54,6 +55,9 @@ var createRow = function(opt) {
 		if (!item.nodeType) {
 			item = document.createTextNode(item);
 		}
+		else {
+			item = item.cloneNode(true);
+		}
 		row.appendChild(item);
 		row.appendChild(document.createTextNode(" "));
 	}
@@ -61,58 +65,77 @@ var createRow = function(opt) {
 	return row;
 };
 
-var requestLog = function(dataItem) {
-	var el = createRow({
-		values: dataItem.values,
-		green: true,
-		ind: dataItem.ind
-	});
+var runStack = function() {
+	var matches = {};
+	var save = [];
 
-	var logEl = document.querySelector("#log");
+	for (var i = 0; i < STACK.length; i++) {
+		var mainItem = STACK[i];
+		var find = null;
 
-	logEl.appendChild(el);
+		if (mainItem.skip) continue;
 
-	document.body.scrollTop = document.body.scrollHeight;
-}
+		for (var j = 0; j < STACK.length; j++) {
+			var lookItem = STACK[j];
 
-var responseLog = function(dataItem) {
-	var el = createRow({
-		values: dataItem.values,
-		ind: dataItem.ind
-	});
+			if (i == j || lookItem.skip) continue;
 
-	var logEl = document.querySelector("#log");
+			if (mainItem.conn == lookItem.conn) {
+				find = lookItem;
+				break;
+			}
+		}
 
-	logEl.appendChild(el);
+		if (find) {
+			var ind = DATA.length;
 
-	document.body.scrollTop = document.body.scrollHeight;
-}
+			var request;
+			var response;
 
-var logRequest = function(data) {
-	var arrow = formatArrow(0);
-	var dataItem = {
-		ind: DATA.length
-	};
+			if (mainItem.type == "response") {
+				response = mainItem;
+				request = find;
+			}
+			else {
+				response = find;
+				request = mainItem;
+			}
 
-	try {
-		var binary = JAK.Base64.atob(data.postData.text);
-		var parsed = JAK.FRPC.parse(binary);
+			var reqItem = {
+				values: request.values,
+				data: request.data,
+				green: request.type == "request",
+				ind: ind
+			};
 
-		var method = document.createElement("strong");
-		method.innerHTML = parsed.method;
+			DATA.push(reqItem);
 
-		var callParams = formatCallParams(parsed.params);
-		
-		dataItem.values = ["FRPC", arrow, data.url, method, callParams];
-		dataItem.data = parsed.params;
-	} catch (e) {
-		dataItem.values = ["FRPC", arrow, data.url, formatException(e)];
-		dataItem.data = e;
+			var resItem = {
+				values: response.values,
+				data: response.data,
+				green: response.type == "request",
+				ind: ind + 1
+			};
+
+			DATA.push(resItem);
+
+			var logEl = document.querySelector("#log");
+
+			logEl.appendChild(createRow(reqItem));
+			logEl.appendChild(createRow(resItem));
+
+			document.body.scrollTop = document.body.scrollHeight;
+
+			find.skip = true;
+			mainItem.skip = true;
+		}
+		else {
+			save.push(mainItem);
+		}
 	}
 
-	DATA.push(dataItem);
-	requestLog(dataItem);
-}
+	STACK = save;
+};
 
 var humanLength = function(size) {
 	if (size < 1024) {
@@ -130,26 +153,49 @@ var humanLength = function(size) {
 	}
 };
 
+var logRequest = function(data, harEntry) {
+	var arrow = formatArrow(0);
+	var conn = harEntry.connection;
+
+	try {
+		var binary = JAK.Base64.atob(data.postData.text);
+		var parsed = JAK.FRPC.parse(binary);
+
+		var method = document.createElement("strong");
+		method.innerHTML = parsed.method;
+
+		var callParams = formatCallParams(parsed.params);
+		
+		STACK.push({
+			conn: conn,
+			type: "request",
+			data: parsed.params,
+			method: parsed.method,
+			values: ["FRPC", arrow, data.url, method, callParams]
+		});
+	} catch (e) {
+	}
+}
+
 var logResponse = function(data, content, harEntry) {
 	var arrow = formatArrow(1);
-	var dataItem = {
-		ind: DATA.length
-	};
+	var conn = harEntry.connection;
 
 	try {
 		var decoded = atob(content);
 		var binary = JAK.Base64.atob(decoded);
 		var parsed = JAK.FRPC.parse(binary);
 
-		dataItem.data = parsed;
-		dataItem.values = ["FRPC", arrow, harEntry.request.url, humanLength(data.bodySize)];
-	} catch (e) {
-		dataItem.data = e;
-		dataItem.values = ["FRPC", arrow, formatException(e)];
-	}
+		STACK.push({
+			conn: conn,
+			type: "response",
+			data: parsed,
+			values: ["FRPC", arrow, harEntry.request.url, humanLength(data.bodySize)]
+		});
 
-	DATA.push(dataItem);
-	responseLog(dataItem);
+		runStack();
+	} catch (e) {
+	}
 }
 
 var isFRPC = function(headers) {
@@ -165,7 +211,7 @@ var processItem = function(harEntry) {
 	var request = harEntry.request;
 
 	if (isFRPC(request.headers)) { 
-		logRequest(request);
+		logRequest(request, harEntry);
 	}
 
 	var response = harEntry.response;
