@@ -1,4 +1,4 @@
-var DATA = {};
+var DATA = [];
 
 var formatCallParams = function(data) {
 	var arr = [];
@@ -37,19 +37,13 @@ var formatArrow = function(type) {
 	return node;
 }
 
-var createRow = function(opt, replaceEl) {
-	var row = replaceEl || document.createElement("div");
-
-	if (replaceEl) {
-		row.innerHTML = "";
-	}
-
+var createRow = function(opt) {
+	var row = document.createElement("div");
 	row.title = "Click to open in a window";
-	if (opt.type == "request") {
+	if (opt.green) {
 		row.style.background = "#9CFF82";
 	}
-	row.setAttribute("data-type", opt.type);
-	row.setAttribute("data-conn", opt.conn);
+	row.setAttribute("data-ind", opt.ind);
 
 	opt = opt || {};
 
@@ -68,46 +62,36 @@ var createRow = function(opt, replaceEl) {
 };
 
 var requestLog = function(dataItem) {
-	dataItem.request.el = createRow({
-		values: dataItem.request.values,
-		type: "request",
-		conn: dataItem.conn
+	var el = createRow({
+		values: dataItem.values,
+		green: true,
+		ind: dataItem.ind
 	});
-
-	dataItem.response.el = document.createElement("div");
-	dataItem.response.el.innerHTML = "Waiting for request...";
 
 	var logEl = document.querySelector("#log");
 
-	logEl.appendChild(dataItem.request.el);
-	logEl.appendChild(dataItem.response.el);
+	logEl.appendChild(el);
 
 	document.body.scrollTop = document.body.scrollHeight;
 }
 
 var responseLog = function(dataItem) {
-	dataItem.response.el = createRow({
-		values: dataItem.response.values,
-		type: "response",
-		conn: dataItem.conn
-	}, dataItem.response.el);
+	var el = createRow({
+		values: dataItem.values,
+		ind: dataItem.ind
+	});
+
+	var logEl = document.querySelector("#log");
+
+	logEl.appendChild(el);
+
+	document.body.scrollTop = document.body.scrollHeight;
 }
 
-var logRequest = function(data, conn) {
+var logRequest = function(data) {
 	var arrow = formatArrow(0);
 	var dataItem = {
-		conn: conn,
-		request: {
-			el: null,
-			values: null,
-			data: null,
-			method: ""
-		},
-		response: {
-			el: null,
-			values: null,
-			data: null
-		}
+		ind: DATA.length
 	};
 
 	try {
@@ -119,15 +103,14 @@ var logRequest = function(data, conn) {
 
 		var callParams = formatCallParams(parsed.params);
 		
-		dataItem.request.values = ["FRPC", arrow, data.url, method, callParams];
-		dataItem.request.data = parsed.params;
-		dataItem.request.method = parsed.method;
+		dataItem.values = ["FRPC", arrow, data.url, method, callParams];
+		dataItem.data = parsed.params;
 	} catch (e) {
-		dataItem.requestvalues = ["FRPC", arrow, data.url, formatException(e)];
+		dataItem.values = ["FRPC", arrow, data.url, formatException(e)];
 		dataItem.data = e;
 	}
 
-	DATA[conn] = dataItem;
+	DATA.push(dataItem);
 	requestLog(dataItem);
 }
 
@@ -149,24 +132,23 @@ var humanLength = function(size) {
 
 var logResponse = function(data, content, harEntry) {
 	var arrow = formatArrow(1);
-	var conn = harEntry.connection;
-	var dataItem = DATA[conn];
+	var dataItem = {
+		ind: DATA.length
+	};
 
 	try {
 		var decoded = atob(content);
 		var binary = JAK.Base64.atob(decoded);
 		var parsed = JAK.FRPC.parse(binary);
 
-		var method = document.createElement("strong");
-		method.innerHTML = dataItem.request.method;
-
-		dataItem.response.data = parsed;
-		dataItem.response.values = ["FRPC", arrow, harEntry.request.url, "|", method, humanLength(data.bodySize)];
+		dataItem.data = parsed;
+		dataItem.values = ["FRPC", arrow, harEntry.request.url, humanLength(data.bodySize)];
 	} catch (e) {
-		dataItem.response.data = e;
-		dataItem.response.values = ["FRPC", arrow, formatException(e)];
+		dataItem.data = e;
+		dataItem.values = ["FRPC", arrow, formatException(e)];
 	}
 
+	DATA.push(dataItem);
 	responseLog(dataItem);
 }
 
@@ -181,10 +163,9 @@ var isFRPC = function(headers) {
 
 var processItem = function(harEntry) {
 	var request = harEntry.request;
-	var conn = harEntry.connection;
 
 	if (isFRPC(request.headers)) { 
-		logRequest(request, conn);
+		logRequest(request);
 	}
 
 	var response = harEntry.response;
@@ -239,11 +220,11 @@ document.querySelector("#log").addEventListener("click", function(e) {
 	}
 	if (!row) { return; }
 
-	var dataType = row.getAttribute("data-type") || "";
-	var dataConn = row.getAttribute("data-conn") || "";
+	var ind = row.getAttribute("data-ind") || "-1";
+	ind = parseInt(ind, 10);
 
-	if (dataConn in DATA && DATA[dataConn][dataType]) {
-		var data = DATA[dataConn][dataType];
+	if (ind >= 0 && ind < DATA.length) {
+		var data = DATA[ind];
 		var w = window.open();
 
 		w.document.head.innerHTML = '<style>' +
