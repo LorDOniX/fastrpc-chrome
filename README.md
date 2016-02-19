@@ -17,3 +17,5 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 ## Autor
 
 Roman Makudera 2016 (c)
+
+![Extensions](/chrome.png)
