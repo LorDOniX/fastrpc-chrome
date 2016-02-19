@@ -1,5 +1,6 @@
 var DATA = [];
-var CONNS = {};
+var STACK = {};
+var STACK_TID = null;
 
 var formatCallParams = function(data) {
 	var arr = [];
@@ -38,15 +39,9 @@ var formatArrow = function(type) {
 	return node;
 }
 
-var createRow = function(opt, replaceEl) {
-	var row = replaceEl || document.createElement("div");
-
-	if (replaceEl) {
-		row.innerHTML = "";
-	}
-
+var createRow = function(opt) {
+	var row = document.createElement("div");
 	row.title = "Click to open in a window";
-
 	if (opt.green) {
 		row.style.background = "#9CFF82";
 	}
@@ -69,6 +64,60 @@ var createRow = function(opt, replaceEl) {
 	}
 
 	return row;
+};
+
+var runStack = function() {
+	var matches = {};
+	var save = [];
+
+	var stackConns = Object.keys(STACK);
+
+	stackConns.forEach(function(conn) {
+		var item = STACK[conn];
+
+		if (item.length == 2) {
+			var ind = DATA.length;
+			var request = item[0];
+			var response = item[1];
+
+			var reqItem = {
+				values: request.values,
+				data: request.data,
+				green: true,
+				ind: ind
+			};
+
+			DATA.push(reqItem);
+
+			var resValues = response.values;
+
+			if (request.method) {
+				var method = document.createElement("strong");
+				method.innerHTML = request.method;
+
+				resValues.splice(3, 0, method);
+			}
+
+			var resItem = {
+				values: resValues,
+				data: response.data,
+				ind: ind + 1
+			};
+
+			DATA.push(resItem);
+
+			var fragment = new DocumentFragment();
+			fragment.appendChild(createRow(reqItem));
+			fragment.appendChild(createRow(resItem));
+
+			var logEl = document.querySelector("#log");
+			logEl.appendChild(fragment);
+
+			document.body.scrollTop = document.body.scrollHeight;
+
+			delete STACK[conn];
+		}
+	});
 };
 
 var humanLength = function(size) {
@@ -99,59 +148,16 @@ var logRequest = function(data, harEntry) {
 		method.innerHTML = parsed.method;
 
 		var callParams = formatCallParams(parsed.params);
-
-		var ind = DATA.length;
-
-		var reqItem = {
+		
+		STACK[conn] = [{
+			conn: conn,
+			type: "request",
 			data: parsed.params,
-			green: true,
 			method: parsed.method,
-			values: ["FRPC", arrow, data.url, method, callParams],
-			ind: ind
-		};
-
-		DATA.push(reqItem);
-
-		var placeholderEl = document.createElement("div");
-		placeholderEl.innerHTML = "Waiting for response...";
-
-		var resItem = {
-			ind: ind + 1,
-			placeholderEl: placeholderEl,
-			method: method.cloneNode(true)
-		};
-
-		DATA.push(resItem);
-
-		CONNS[conn] = [reqItem, resItem];
-
-		var fragment = new DocumentFragment();
-		fragment.appendChild(createRow(reqItem));
-		fragment.appendChild(placeholderEl);
-
-		var logEl = document.querySelector("#log");
-		logEl.appendChild(fragment);
-
-		document.body.scrollTop = document.body.scrollHeight;
+			values: ["FRPC", arrow, data.url, method, callParams]
+		}];
+	} catch (e) {
 	}
-	catch (e) {
-		var item = {
-			ind: DATA.length,
-			data: e,
-			values: ["FRPC", arrow, formatException(e)]
-		};
-
-		DATA.push(item);
-
-		oneRow(item);
-	}
-}
-
-var oneRow = function(opt) {
-	var logEl = document.querySelector("#log");
-	logEl.appendChild(createRow(opt));
-
-	document.body.scrollTop = document.body.scrollHeight;
 }
 
 var logResponse = function(data, content, harEntry) {
@@ -163,36 +169,24 @@ var logResponse = function(data, content, harEntry) {
 		var binary = JAK.Base64.atob(decoded);
 		var parsed = JAK.FRPC.parse(binary);
 
-		if (CONNS[conn]) {
-			var resItem = CONNS[conn][1];
-			resItem.data = parsed;
-			resItem.values = ["FRPC", arrow, harEntry.request.url, resItem.method, humanLength(data.bodySize)];
-
-			createRow(resItem, resItem.placeholderEl);
-		}
-		else {
-			// nemelo by nastat
-			var item = {
-				ind: DATA.length,
+		if (STACK[conn]) {
+			STACK[conn].push({
+				conn: conn,
+				type: "response",
 				data: parsed,
 				values: ["FRPC", arrow, harEntry.request.url, humanLength(data.bodySize)]
-			};
+			});
 
-			DATA.push(item);
+			if (STACK_TID) {
+				clearTimeout(STACK_TID);
+				STACK_TID = null;
+			}
 
-			oneRow(item);
+			STACK_TID = setTimeout(function() {
+				runStack();
+			}, 20);
 		}
-	}
-	catch (e) {
-		var item = {
-			ind: DATA.length,
-			data: e,
-			values: ["FRPC", arrow, formatException(e)]
-		};
-
-		DATA.push(item);
-
-		oneRow(item);
+	} catch (e) {
 	}
 }
 
@@ -251,7 +245,8 @@ chrome.devtools.network.getHAR(processItems);
 
 document.querySelector("#clear").addEventListener("click", function(e) {
 	DATA = [];
-	CONNS = {};
+	STACK = {};
+	STACK_TID = null;
 	document.querySelector("#log").innerHTML = "";
 });
 
