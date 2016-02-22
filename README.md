@@ -18,6 +18,11 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ![Extensions](/chrome.png)
 
+## Changelog
+
+22. 2. 2016
+- upravené párování, ale i tak se občas stane, že se překryjí dvě dvojice
+
 ## Autor
 
 Roman Makudera 2016 (c)

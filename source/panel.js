@@ -40,6 +40,7 @@ var formatArrow = function(type) {
 
 var createRow = function(opt, replaceEl) {
 	var row = replaceEl || document.createElement("div");
+	row.classList.add("log-line");
 
 	if (replaceEl) {
 		row.innerHTML = "";
@@ -106,28 +107,20 @@ var logRequest = function(data, harEntry) {
 			data: parsed.params,
 			green: true,
 			method: parsed.method,
+			placeholderEl: document.createElement("div"),
 			values: ["FRPC", arrow, data.url, method, callParams],
 			ind: ind
 		};
 
+		reqItem.placeholderEl.classList.add("place-holder");
+
 		DATA.push(reqItem);
 
-		var placeholderEl = document.createElement("div");
-		placeholderEl.innerHTML = "Waiting for response...";
-
-		var resItem = {
-			ind: ind + 1,
-			placeholderEl: placeholderEl,
-			method: method.cloneNode(true)
-		};
-
-		DATA.push(resItem);
-
-		CONNS[conn] = [reqItem, resItem];
+		CONNS[conn] = [reqItem];
 
 		var fragment = new DocumentFragment();
 		fragment.appendChild(createRow(reqItem));
-		fragment.appendChild(placeholderEl);
+		fragment.appendChild(reqItem.placeholderEl);
 
 		var logEl = document.querySelector("#log");
 		logEl.appendChild(fragment);
@@ -164,14 +157,19 @@ var logResponse = function(data, content, harEntry) {
 		var parsed = JAK.FRPC.parse(binary);
 
 		if (CONNS[conn]) {
-			var resItem = CONNS[conn][1];
-			resItem.data = parsed;
-			resItem.values = ["FRPC", arrow, harEntry.request.url, resItem.method, humanLength(data.bodySize)];
+			var reqItem = CONNS[conn][0];
 
-			createRow(resItem, resItem.placeholderEl);
+			var resItem = {
+				data: parsed,
+				ind: DATA.length,
+				values: ["FRPC", arrow, harEntry.request.url, reqItem.method, humanLength(data.bodySize)]
+			};
+
+			DATA.push(resItem);
+
+			reqItem.placeholderEl.appendChild(createRow(resItem));
 		}
 		else {
-			// nemelo by nastat
 			var item = {
 				ind: DATA.length,
 				data: parsed,
@@ -257,15 +255,23 @@ document.querySelector("#clear").addEventListener("click", function(e) {
 
 document.querySelector("#log").addEventListener("click", function(e) {
 	var target = e.target;
-	var row = null;
+	var ind;
 
 	while (target.parentNode) {
-		if (target.parentNode.id == "log") { row = target; }
-		target = target.parentNode;
-	}
-	if (!row) { return; }
+		var ind = target.getAttribute("data-ind");
 
-	var ind = row.getAttribute("data-ind") || "-1";
+		if (!ind) {
+			target = target.parentNode;
+
+			if (target.parentNode.tagName.toLowerCase() == "body") break;
+		}
+		else {
+			break;
+		}
+	}
+
+	if (!ind) { return; }
+
 	ind = parseInt(ind, 10);
 
 	if (ind >= 0 && ind < DATA.length) {
