@@ -88,12 +88,14 @@ var humanLength = function(size) {
 	}
 };
 
-var logRequest = function(data, harEntry) {
+var setRequestData = function(data, harEntry, header) {
 	var arrow = formatArrow(0);
 	var conn = harEntry.connection;
+	var dataText = data.postData.text;
 
 	try {
-		var binary = JAK.Base64.atob(data.postData.text);
+		if (header.indexOf("base64") > -1) { dataText = atob(dataText); }
+		var binary = dataText.split("").map(function(ch) { return ch.charCodeAt(0); })
 		var parsed = JAK.FRPC.parse(binary);
 
 		var method = document.createElement("strong");
@@ -147,13 +149,14 @@ var oneRow = function(opt) {
 	document.body.scrollTop = document.body.scrollHeight;
 }
 
-var logResponse = function(data, content, harEntry) {
+var setResponseData = function(data, content, harEntry, header) {
 	var arrow = formatArrow(1);
 	var conn = harEntry.connection;
 
 	try {
 		var decoded = atob(content);
-		var binary = JAK.Base64.atob(decoded);
+		if (header.indexOf("base64") > -1) { decoded = atob(decoded); }
+		var binary = decoded.split("").map(function(ch) { return ch.charCodeAt(0); });
 		var parsed = JAK.FRPC.parse(binary);
 
 		if (CONNS[conn]) {
@@ -198,22 +201,24 @@ var isFRPC = function(headers) {
 	for (var i=0;i<headers.length;i++) {
 		var header = headers[i];
 		if (header.name.toLowerCase() != "content-type") { continue; }
-		if (header.value == "application/x-base64-frpc") { return true; }
+		if (header.value == "application/x-base64-frpc" || header.value == "application/x-frpc") { return header.value; }
 	}
+
 	return false;
 }
 
 var processItem = function(harEntry) {
 	var request = harEntry.request;
-
-	if (isFRPC(request.headers)) { 
-		logRequest(request, harEntry);
+	var requestHeader = isFRPC(request.headers);
+	if (requestHeader) { 
+		setRequestData(request, harEntry, requestHeader);
 	}
 
 	var response = harEntry.response;
-	if (isFRPC(response.headers)) { 
+	var responseHeader = isFRPC(response.headers);
+	if (responseHeader) { 
 		harEntry.getContent(function(content) {
-			logResponse(response, content, harEntry)
+			setResponseData(response, content, harEntry, responseHeader)
 		});
 	}
 }

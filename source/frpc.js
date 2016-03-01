@@ -2,10 +2,7 @@
  * @class FRPC parser a serializator
  * @group jak-utils
  */
-JAK.FRPC = JAK.ClassMaker.makeStatic({
-	NAME: "JAK.FRPC",
-	VERSION: "1.2"
-});
+JAK = {FRPC: {}};
 
 JAK.FRPC.TYPE_MAGIC		= 25;
 JAK.FRPC.TYPE_CALL		= 13;
