@@ -1,5 +1,7 @@
 # Doplněk pro Fast RPC do Google Chrome
 
+publikováno na https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgmihkckimolpjiimjgfe?authuser=1
+
 Původní zdrojové kódy jsem převzal od Ondry Žáry. Funkcionalita:
 
 - párování requestů
@@ -20,11 +22,14 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+1. 3. 2016
+- přidána podpora pro application/x-frpc
+
 22. 2. 2016
 - upravené párování, ale i tak se občas stane, že se překryjí dvě dvojice
 
 ## Autor
 
 Roman Makudera 2016 (c)
-
-
+Ondřej Žára
+Honza Štěpán
