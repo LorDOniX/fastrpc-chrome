@@ -22,10 +22,10 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
-1. 3. 2016
+`1.0.1` - 1. 3. 2016
 - přidána podpora pro application/x-frpc
 
-22. 2. 2016
+`1.0.0` - 22. 2. 2016
 - upravené párování, ale i tak se občas stane, že se překryjí dvě dvojice
 
 ## Autor

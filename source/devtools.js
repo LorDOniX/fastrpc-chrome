@@ -1,1 +1,1 @@
-chrome.devtools.panels.create("FastRPC", "seznam.png", "panel.html", function() {});
+chrome.devtools.panels.create("FastRPC", "", "panel.html", function() {});
