@@ -22,6 +22,10 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.2` - 19. 4. 2016
+- zrušené párování, protože to nedělalo dobrotu
+- jquery plugin pro lepší manipulaci s JSON objektem
+
 `1.0.1` - 1. 3. 2016
 - přidána podpora pro application/x-frpc
 
@@ -30,6 +34,6 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Autor
 
-Roman Makudera 2016 (c)
-Ondřej Žára
+Roman Makudera 2016 (c),
+Ondřej Žára,
 Honza Štěpán

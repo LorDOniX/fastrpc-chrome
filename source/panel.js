@@ -1,5 +1,4 @@
 var DATA = [];
-var CONNS = {};
 
 var formatCallParams = function(data) {
 	var arr = [];
@@ -38,22 +37,19 @@ var formatArrow = function(type) {
 	return node;
 }
 
-var createRow = function(opt, replaceEl) {
-	var row = replaceEl || document.createElement("div");
+var createRow = function(opt) {
+	var row = document.createElement("div");
 	row.classList.add("log-line");
 
-	if (replaceEl) {
-		row.innerHTML = "";
-	}
-
 	row.title = "Click to open in a window";
+
+	opt = opt || {};
 
 	if (opt.green) {
 		row.style.background = "#9CFF82";
 	}
+	
 	row.setAttribute("data-ind", opt.ind);
-
-	opt = opt || {};
 
 	var ar = [].concat(opt.values || []);
 
@@ -88,10 +84,10 @@ var humanLength = function(size) {
 	}
 };
 
-var setRequestData = function(data, harEntry, header) {
+var setRequestData = function(data, header) {
 	var arrow = formatArrow(0);
-	var conn = harEntry.connection;
 	var dataText = data.postData.text;
+	var item;
 
 	try {
 		if (header.indexOf("base64") > -1) { dataText = atob(dataText); }
@@ -103,43 +99,24 @@ var setRequestData = function(data, harEntry, header) {
 
 		var callParams = formatCallParams(parsed.params);
 
-		var ind = DATA.length;
-
-		var reqItem = {
+		item = {
 			data: parsed.params,
 			green: true,
 			method: parsed.method,
-			placeholderEl: document.createElement("div"),
 			values: ["FRPC", arrow, data.url, method, callParams],
-			ind: ind
+			ind: DATA.length
 		};
-
-		reqItem.placeholderEl.classList.add("place-holder");
-
-		DATA.push(reqItem);
-
-		CONNS[conn] = [reqItem];
-
-		var fragment = new DocumentFragment();
-		fragment.appendChild(createRow(reqItem));
-		fragment.appendChild(reqItem.placeholderEl);
-
-		var logEl = document.querySelector("#log");
-		logEl.appendChild(fragment);
-
-		document.body.scrollTop = document.body.scrollHeight;
 	}
 	catch (e) {
-		var item = {
+		item = {
 			ind: DATA.length,
 			data: e,
 			values: ["FRPC", arrow, formatException(e)]
 		};
-
-		DATA.push(item);
-
-		oneRow(item);
 	}
+
+	DATA.push(item);
+	oneRow(item);
 }
 
 var oneRow = function(opt) {
@@ -151,7 +128,7 @@ var oneRow = function(opt) {
 
 var setResponseData = function(data, content, harEntry, header) {
 	var arrow = formatArrow(1);
-	var conn = harEntry.connection;
+	var item;
 
 	try {
 		var decoded = atob(content);
@@ -159,42 +136,22 @@ var setResponseData = function(data, content, harEntry, header) {
 		var binary = decoded.split("").map(function(ch) { return ch.charCodeAt(0); });
 		var parsed = JAK.FRPC.parse(binary);
 
-		if (CONNS[conn]) {
-			var reqItem = CONNS[conn][0];
-
-			var resItem = {
-				data: parsed,
-				ind: DATA.length,
-				values: ["FRPC", arrow, harEntry.request.url, reqItem.method, humanLength(data.bodySize)]
-			};
-
-			DATA.push(resItem);
-
-			reqItem.placeholderEl.appendChild(createRow(resItem));
-		}
-		else {
-			var item = {
-				ind: DATA.length,
-				data: parsed,
-				values: ["FRPC", arrow, harEntry.request.url, humanLength(data.bodySize)]
-			};
-
-			DATA.push(item);
-
-			oneRow(item);
-		}
+		item = {
+			ind: DATA.length,
+			data: parsed,
+			values: ["FRPC", arrow, harEntry.request.url, humanLength(data.bodySize)]
+		};
 	}
 	catch (e) {
-		var item = {
+		item = {
 			ind: DATA.length,
 			data: e,
 			values: ["FRPC", arrow, formatException(e)]
 		};
-
-		DATA.push(item);
-
-		oneRow(item);
 	}
+
+	DATA.push(item);
+	oneRow(item);
 }
 
 var isFRPC = function(headers) {
@@ -211,7 +168,7 @@ var processItem = function(harEntry) {
 	var request = harEntry.request;
 	var requestHeader = isFRPC(request.headers);
 	if (requestHeader) { 
-		setRequestData(request, harEntry, requestHeader);
+		setRequestData(request, requestHeader);
 	}
 
 	var response = harEntry.response;
@@ -230,31 +187,11 @@ var processItems = function(result) {
 	}
 }
 
-function syntaxHighlight(json) {
-    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-        var cls = 'number';
-        if (/^"/.test(match)) {
-            if (/:$/.test(match)) {
-                cls = 'key';
-            } else {
-                cls = 'string';
-            }
-        } else if (/true|false/.test(match)) {
-            cls = 'boolean';
-        } else if (/null/.test(match)) {
-            cls = 'null';
-        }
-        return '<span class="' + cls + '">' + match + '</span>';
-    });
-}
-
 chrome.devtools.network.onRequestFinished.addListener(processItem);
 chrome.devtools.network.getHAR(processItems);
 
 document.querySelector("#clear").addEventListener("click", function(e) {
 	DATA = [];
-	CONNS = {};
 	document.querySelector("#log").innerHTML = "";
 });
 
@@ -282,15 +219,11 @@ document.querySelector("#log").addEventListener("click", function(e) {
 	if (ind >= 0 && ind < DATA.length) {
 		var data = DATA[ind];
 		var w = window.open();
+		var jsonPre = document.createElement("pre");
 
-		w.document.head.innerHTML = '<style>' +
-		'pre { padding: 5px; margin: 5px; font-size: 14px; }' +
-		'.string { color: green; }' +
-		'.number { color: blue; }' +
-		'.boolean { color: blue; }' +
-		'.null { color: magenta; }' +
-		'.key { color: black; font-weight: bold; }' +
-		'</style>';
+		$(jsonPre).jsonViewer(data, {
+			collapsed: false
+		});
 
 		var p = document.createElement("p");
 		p.style.fontSize = "20px";
@@ -299,28 +232,107 @@ document.querySelector("#log").addEventListener("click", function(e) {
 		p.appendChild(pInfo);
 
 		data.values.forEach(function(i) {
-			var span = document.createElement("span");
-			span.innerHTML = "";
-			span.style.marginLeft = "15px";
+		    var span = document.createElement("span");
+		    span.innerHTML = "";
+		    span.style.marginLeft = "15px";
 
-			if (i.toString().indexOf("[object HTML") != -1) {
-				p.appendChild(i.cloneNode(true));
-			}
-			else {
-				var s = document.createElement("strong");
-				s.innerHTML = i;
-				p.appendChild(s);
-			}
+		    if (i.toString().indexOf("[object HTML") != -1) {
+		        p.appendChild(i.cloneNode(true));
+		    }
+		    else {
+		        var s = document.createElement("strong");
+		        s.innerHTML = i;
+		        p.appendChild(s);
+		    }
 
-			p.appendChild(span);
+		    p.appendChild(span);
 		});
+
+		// https://cssminifier.com/ jquery.json-viewer.css
+		w.document.head.innerHTML = '<meta charset="utf-8"><style>' +
+		'body { font-size: 14px; }' +
+		'/* Syntax highlighting for JSON objects */'+
+		'ul.json-dict, ol.json-array {'+
+		  'list-style-type: none;'+
+		  'margin: 0 0 0 1px;'+
+		  'border-left: 1px dotted #ccc;'+
+		  'padding-left: 2em;'+
+		'}'+
+		'.json-string {'+
+		  'color: #0B7500;'+
+		'}'+
+		'.json-literal {'+
+		  'color: #1A01CC;'+
+		  'font-weight: bold;'+
+		'}'+
+		''+
+		'/* Toggle button */'+
+		'a.json-toggle {'+
+		  'position: relative;'+
+		  'color: inherit;'+
+		  'text-decoration: none;'+
+		'}'+
+		'a.json-toggle:focus {'+
+		  'outline: none;'+
+		'}'+
+		'a.json-toggle:before {'+
+		  'color: #aaa;'+
+		  'content: "\\25BC"; /* down arrow */'+
+		  'position: absolute;'+
+		  'display: inline-block;'+
+		  'width: 1em;'+
+		  'left: -1em;'+
+		'}'+
+		'a.json-toggle.collapsed:before {'+
+		  'content: "\\25B6"; /* left arrow */'+
+		'}'+
+		''+
+		'/* Collapsable placeholder links */'+
+		'a.json-placeholder {'+
+		  'color: #aaa;'+
+		  'padding: 0 1em;'+
+		  'text-decoration: none;'+
+		'}'+
+		'a.json-placeholder:hover {'+
+		  'text-decoration: underline;'+
+		'}'+
+		'pre { padding: 0.5em 1.5em; }' +
+		'</style>';
 
 		w.document.body.appendChild(p);
 
 		w.document.body.appendChild(document.createElement("hr"));
 
-		var pre = document.createElement("pre");
-		pre.innerHTML = syntaxHighlight(JSON.stringify(data.data, undefined, 4));
-		w.document.body.appendChild(pre);
+		var collapseAll = document.createElement("button");
+		collapseAll.innerHTML = "Collapse to level 1";
+		collapseAll.setAttribute("type", "button");
+		collapseAll.style.display = "inline-block";
+		collapseAll.addEventListener("click", function() {
+			$(jsonPre).jsonViewer(data, {
+				collapsed: true
+			});
+
+			$(jsonPre).find("a.json-placeholder:visible").first().click();
+		});
+
+		var expandAll = document.createElement("button");
+		expandAll.innerHTML = "Expand all";
+		expandAll.style.marginLeft = "10px";
+		expandAll.setAttribute("type", "button");
+		expandAll.style.display = "inline-block";
+		expandAll.addEventListener("click", function() {
+			$(jsonPre).jsonViewer(data, {
+				collapsed: false
+			});
+		});
+
+		var buttonCover = document.createElement("div");
+
+		buttonCover.appendChild(collapseAll);
+		buttonCover.appendChild(expandAll);
+
+		w.document.body.appendChild(buttonCover);
+
+		w.document.body.appendChild(jsonPre);
 	}
 });
