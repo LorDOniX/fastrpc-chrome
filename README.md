@@ -1,14 +1,15 @@
 # Doplněk pro Fast RPC do Google Chrome
 
-publikováno na https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgmihkckimolpjiimjgfe?authuser=1
+publikováno na https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgmihkckimolpjiimjgfe
 
 Původní zdrojové kódy jsem převzal od Ondry Žáry. Funkcionalita:
 
-- párování requestů
 - formátované a barevně podbarvené zobrazení požadavků/odpovědí ze serveru
+- jquery plugin pro zobrazení a snadnou manipulaci s JSON daty
 
 ## Instalace
 
+- použít odkaz z webstore
 - nainstalovat jako doplněk `crx` přímo do Chromu
 - nebo jako rozbalený doplněk, kde je cesta k adresáři `source`. V tomto případě je potřeba zaškrtnout `developer mode`.
 
