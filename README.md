@@ -23,6 +23,10 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.3` - 20. 4. 2016
+- fix zoomování v otevřeném okně
+- fix zobrazení JSON dat
+
 `1.0.2` - 19. 4. 2016
 - zrušené párování, protože to nedělalo dobrotu
 - jquery plugin pro lepší manipulaci s JSON objektem

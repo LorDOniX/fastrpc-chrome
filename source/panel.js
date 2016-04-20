@@ -218,10 +218,10 @@ document.querySelector("#log").addEventListener("click", function(e) {
 
 	if (ind >= 0 && ind < DATA.length) {
 		var data = DATA[ind];
-		var w = window.open();
+		var w = window.open("about:blank", "");
 		var jsonPre = document.createElement("pre");
 
-		$(jsonPre).jsonViewer(data, {
+		$(jsonPre).jsonViewer(data.data, {
 			collapsed: false
 		});
 
