@@ -220,8 +220,9 @@ document.querySelector("#log").addEventListener("click", function(e) {
 		var data = DATA[ind];
 		var w = window.open("about:blank", "");
 		var jsonPre = document.createElement("pre");
+		var jsonData = data.data;
 
-		$(jsonPre).jsonViewer(data.data, {
+		$(jsonPre).jsonViewer(jsonData, {
 			collapsed: false
 		});
 
@@ -308,7 +309,7 @@ document.querySelector("#log").addEventListener("click", function(e) {
 		collapseAll.setAttribute("type", "button");
 		collapseAll.style.display = "inline-block";
 		collapseAll.addEventListener("click", function() {
-			$(jsonPre).jsonViewer(data, {
+			$(jsonPre).jsonViewer(jsonData, {
 				collapsed: true
 			});
 
@@ -321,7 +322,7 @@ document.querySelector("#log").addEventListener("click", function(e) {
 		expandAll.setAttribute("type", "button");
 		expandAll.style.display = "inline-block";
 		expandAll.addEventListener("click", function() {
-			$(jsonPre).jsonViewer(data, {
+			$(jsonPre).jsonViewer(jsonData, {
 				collapsed: false
 			});
 		});

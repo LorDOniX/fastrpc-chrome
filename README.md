@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.4` - 20. 4. 2016
+- fix zobrazení JSON dat (collapse, fold)
+
 `1.0.3` - 20. 4. 2016
 - fix zoomování v otevřeném okně
 - fix zobrazení JSON dat
