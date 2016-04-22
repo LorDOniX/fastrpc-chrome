@@ -64,6 +64,9 @@
         html += '[]';
       }
     }
+    else if (json instanceof Date) {
+      html += '<span class="json-string">"' + json.toString() + '"</span>';
+    }
     else if (typeof json === 'object') {
       var key_count = Object.keys(json).length;
       if (key_count > 0) {

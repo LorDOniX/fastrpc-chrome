@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.5` - 21. 4. 2016
+- fix pluginu, který neumí zobrazovat Date
+
 `1.0.4` - 20. 4. 2016
 - fix zobrazení JSON dat (collapse, fold)
 
