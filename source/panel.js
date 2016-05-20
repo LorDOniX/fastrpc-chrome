@@ -9,26 +9,72 @@ var formatCallParams = function(data) {
 
 		if (item === null) {
 			output.appendChild(document.createTextNode("null"));
-		} else if (item instanceof Array) {
+		}
+		else if (item instanceof Array) {
 			output.appendChild(document.createTextNode("[...]"));
-		} else if (typeof(item) == "object") {
-			output.appendChild(document.createTextNode("{...}"));
-		} else {
-			if (typeof item === "string") {
-				var node = document.createElement("span");
-				node.innerHTML = '"' + item + '"';
-				node.style.color = "#0B7500";
-				output.appendChild(node);
-			}
-			else if (typeof item === "number") {
-				var node = document.createElement("span");
-				node.innerHTML = item;
-				node.style.color = "#1A01CC";
-				output.appendChild(node);
-			}
-			else {
-				output.appendChild(document.createTextNode(item));
-			}
+		}
+		else if (typeof(item) == "object") {
+			output.appendChild(document.createTextNode("{"));
+			
+			var keys = Object.keys(item);
+
+			keys.every(function(key, ind) {
+				if (ind > 2) {
+					output.appendChild(document.createTextNode("..."));
+					return false;
+				}
+
+				var itemX = item[key];
+
+				if (typeof itemX === "string") {
+					output.appendChild(document.createTextNode(key + ": "));
+
+					var node = document.createElement("span");
+					node.innerHTML = '"' + itemX + '"';
+					node.style.color = "#0B7500";
+					output.appendChild(node);
+				}
+				else if (typeof itemX === "number" || typeof(itemX) == "boolean") {
+					output.appendChild(document.createTextNode(key + ": "));
+
+					var node = document.createElement("span");
+					node.innerHTML = itemX;
+					node.style.color = "#1A01CC";
+					output.appendChild(node);
+				}
+				else if (itemX instanceof Array) {
+					output.appendChild(document.createTextNode("[...]"));
+				}
+				else if (typeof(itemX) == "object") {
+					output.appendChild(document.createTextNode("{...}"));
+				}
+				else {
+					output.appendChild(document.createTextNode(itemX));
+				}
+
+				if (ind != keys.length - 1) {
+					output.appendChild(document.createTextNode(", "));
+				}
+
+				return true;
+			});
+
+			output.appendChild(document.createTextNode("}"));
+		}
+		else if (typeof item === "string") {
+			var node = document.createElement("span");
+			node.innerHTML = '"' + item + '"';
+			node.style.color = "#0B7500";
+			output.appendChild(node);
+		}
+		else if (typeof item === "number" || typeof(item) == "boolean") {
+			var node = document.createElement("span");
+			node.innerHTML = item;
+			node.style.color = "#1A01CC";
+			output.appendChild(node);
+		}
+		else {
+			output.appendChild(document.createTextNode(item));
 		}
 
 		if (i != data.length - 1) {
