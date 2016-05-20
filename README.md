@@ -46,6 +46,10 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 `1.0.0` - 22. 2. 2016
 - upravené párování, ale i tak se občas stane, že se překryjí dvě dvojice
 
+## TODO
+
+- úprava zobrazení requestů: description({firm: [...]}, {fetchPhoto:true, ratios : [...]})
+
 ## Autor
 
 Roman Makudera 2016 (c),
