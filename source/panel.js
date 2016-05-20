@@ -1,26 +1,44 @@
 var DATA = [];
 
 var formatCallParams = function(data) {
-	var arr = [];
-	var jsonArr = [];
+	var output = document.createElement("span");
+	output.appendChild(document.createTextNode("("));
 
 	for (var i=0;i<data.length;i++) {
 		var item = data[i];
 
 		if (item === null) {
-			arr.push("null");
+			output.appendChild(document.createTextNode("null"));
 		} else if (item instanceof Array) {
-			arr.push("[...]");
-			jsonArr.push(item);
+			output.appendChild(document.createTextNode("[...]"));
 		} else if (typeof(item) == "object") {
-			arr.push("{...}");
-			jsonArr.push(item);
+			output.appendChild(document.createTextNode("{...}"));
 		} else {
-			arr.push(item);
+			if (typeof item === "string") {
+				var node = document.createElement("span");
+				node.innerHTML = '"' + item + '"';
+				node.style.color = "#0B7500";
+				output.appendChild(node);
+			}
+			else if (typeof item === "number") {
+				var node = document.createElement("span");
+				node.innerHTML = item;
+				node.style.color = "#1A01CC";
+				output.appendChild(node);
+			}
+			else {
+				output.appendChild(document.createTextNode(item));
+			}
+		}
+
+		if (i != data.length - 1) {
+			output.appendChild(document.createTextNode(", "));
 		}
 	}
 
-	return "(" + arr.join(", ") + ")";
+	output.appendChild(document.createTextNode(")"));
+
+	return output;
 }
 
 var formatException = function(e) {
@@ -45,8 +63,8 @@ var createRow = function(opt) {
 
 	opt = opt || {};
 
-	if (opt.green) {
-		row.style.background = "#9CFF82";
+	if (opt.addBg) {
+		row.style.background = "#f3f3f3";
 	}
 	
 	row.setAttribute("data-ind", opt.ind);
@@ -101,7 +119,7 @@ var setRequestData = function(data, header) {
 
 		item = {
 			data: parsed.params,
-			green: true,
+			addBg: true,
 			method: parsed.method,
 			values: ["FRPC", arrow, data.url, method, callParams],
 			ind: DATA.length
