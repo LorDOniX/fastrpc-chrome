@@ -1,8 +1,13 @@
 var DATA = [];
 
-var formatCallParams = function(data) {
-	var output = document.createElement("span");
-	output.appendChild(document.createTextNode("("));
+var formatCallParams = function(data, output, lvl) {
+	lvl = lvl || 1;
+
+	output = output || document.createElement("span");
+
+	if (lvl == 1) {
+		output.appendChild(document.createTextNode("("));
+	}
 
 	for (var i=0;i<data.length;i++) {
 		var item = data[i];
@@ -11,53 +16,65 @@ var formatCallParams = function(data) {
 			output.appendChild(document.createTextNode("null"));
 		}
 		else if (item instanceof Array) {
-			output.appendChild(document.createTextNode("[...]"));
+			output.appendChild(document.createTextNode("["));
+			
+			if (lvl > 1) {
+				output.appendChild(document.createTextNode("..."));
+			}
+			else {
+				item.forEach(function(itemX, ind) {
+					formatCallParams([itemX], output, lvl + 1);
+
+					if (ind != item.length - 1) {
+						output.appendChild(document.createTextNode(", "));
+					}
+				});
+			}
+
+			output.appendChild(document.createTextNode("]"));
 		}
 		else if (typeof(item) == "object") {
 			output.appendChild(document.createTextNode("{"));
 			
-			var keys = Object.keys(item);
+			if (lvl > 1) {
+				output.appendChild(document.createTextNode("..."));
+			}
+			else {
+				var keys = Object.keys(item);
 
-			keys.every(function(key, ind) {
-				if (ind > 2) {
-					output.appendChild(document.createTextNode("..."));
-					return false;
-				}
+				keys.forEach(function(key, ind) {
+					var itemX = item[key];
 
-				var itemX = item[key];
+					if (typeof itemX === "string") {
+						var node = document.createElement("span");
+						node.innerHTML = '"' + key + '"';
+						node.style.color = "#0B7500";
+						output.appendChild(node);
+					}
+					else if (typeof itemX === "number" || typeof(itemX) == "boolean") {
+						var node = document.createElement("span");
+						node.innerHTML = key;
+						if (typeof(item) == "boolean") {
+							node.style.fontWeight = "bold";
+						}
+						node.style.color = "#1A01CC";
+						output.appendChild(node);
+					}
+					else if (itemX instanceof Array) {
+						output.appendChild(document.createTextNode(key + ": [...]"));
+					}
+					else if (typeof(itemX) == "object") {
+						output.appendChild(document.createTextNode(key + ": {...}"));
+					}
+					else {
+						output.appendChild(document.createTextNode(key));
+					}
 
-				if (typeof itemX === "string") {
-					output.appendChild(document.createTextNode(key + ": "));
-
-					var node = document.createElement("span");
-					node.innerHTML = '"' + itemX + '"';
-					node.style.color = "#0B7500";
-					output.appendChild(node);
-				}
-				else if (typeof itemX === "number" || typeof(itemX) == "boolean") {
-					output.appendChild(document.createTextNode(key + ": "));
-
-					var node = document.createElement("span");
-					node.innerHTML = itemX;
-					node.style.color = "#1A01CC";
-					output.appendChild(node);
-				}
-				else if (itemX instanceof Array) {
-					output.appendChild(document.createTextNode("[...]"));
-				}
-				else if (typeof(itemX) == "object") {
-					output.appendChild(document.createTextNode("{...}"));
-				}
-				else {
-					output.appendChild(document.createTextNode(itemX));
-				}
-
-				if (ind != keys.length - 1) {
-					output.appendChild(document.createTextNode(", "));
-				}
-
-				return true;
-			});
+					if (ind != keys.length - 1) {
+						output.appendChild(document.createTextNode(", "));
+					}
+				});
+			}
 
 			output.appendChild(document.createTextNode("}"));
 		}
@@ -70,6 +87,9 @@ var formatCallParams = function(data) {
 		else if (typeof item === "number" || typeof(item) == "boolean") {
 			var node = document.createElement("span");
 			node.innerHTML = item;
+			if (typeof(item) == "boolean") {
+				node.style.fontWeight = "bold";
+			}
 			node.style.color = "#1A01CC";
 			output.appendChild(node);
 		}
@@ -82,7 +102,9 @@ var formatCallParams = function(data) {
 		}
 	}
 
-	output.appendChild(document.createTextNode(")"));
+	if (lvl == 1) {
+		output.appendChild(document.createTextNode(")"));
+	}
 
 	return output;
 }
