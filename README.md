@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.7` - 24. 5. 2016
+- podbarvení parametrů FRPC volání - nižší úrovně
+
 `1.0.6` - 20. 5. 2016
 - podbarvené number/string u parametrů FRPC volání
 

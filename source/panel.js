@@ -154,21 +154,21 @@ var createRow = function(opt) {
 	return row;
 };
 
-var humanLength = function(size) {
-	if (size < 1024) {
-		return size + " B";
+// format size in bytes
+var formatSize = function(size) {
+	if (typeof size !== "number") {
+		return "null";
 	}
-	else if (size >= 1024 && size <= 1024*1024) {
-		size = (size / 1024).toFixed(2);
 
-		return size + " KB";
-	}
-	else {
-		size = (size / (1024 * 1024)).toFixed(2);
+	var lv = size > 0 ? Math.floor(Math.log(size) / Math.log(1000)) : 0;
+	var sizes = ["", "K", "M", "G", "T"];
 
-		return size + " MB";
-	}
-};
+	lv = Math.min(sizes.length, lv);
+	
+	var value = lv > 0 ? (size / Math.pow(1000, lv)).toFixed(2) : size;
+
+	return value + " " + sizes[lv] + "B";
+}
 
 var setRequestData = function(data, header) {
 	var arrow = formatArrow(0);
@@ -225,7 +225,7 @@ var setResponseData = function(data, content, harEntry, header) {
 		item = {
 			ind: DATA.length,
 			data: parsed,
-			values: ["FRPC", arrow, harEntry.request.url, humanLength(data.bodySize)]
+			values: ["FRPC", arrow, harEntry.request.url, formatSize(data.bodySize)]
 		};
 	}
 	catch (e) {
