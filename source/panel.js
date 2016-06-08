@@ -1,6 +1,15 @@
-var DATA = [];
+var Panel = function() {
+	this._data = [];
+	this._dom = {};
+	this._dom.log = document.querySelector("#log");
 
-var formatCallParams = function(data, output, lvl) {
+	document.querySelector("#clear").addEventListener("click", this._clearClick.bind(this));
+	this._dom.log.addEventListener("click", this._logClick.bind(this));
+
+	chrome.devtools.network.onRequestFinished.addListener(this._processItem.bind(this));
+};
+
+Panel.prototype._formatCallParams = function(data, output, lvl) {
 	lvl = lvl || 1;
 
 	output = output || document.createElement("span");
@@ -23,7 +32,7 @@ var formatCallParams = function(data, output, lvl) {
 			}
 			else {
 				item.forEach(function(itemX, ind) {
-					formatCallParams([itemX], output, lvl + 1);
+					this._formatCallParams([itemX], output, lvl + 1);
 
 					if (ind != item.length - 1) {
 						output.appendChild(document.createTextNode(", "));
@@ -107,55 +116,24 @@ var formatCallParams = function(data, output, lvl) {
 	}
 
 	return output;
-}
+};
 
-var formatException = function(e) {
+Panel.prototype._formatException = function(e) {
 	var result = document.createElement("strong");
 	result.style.color = "red";
 	result.innerHTML = e.message;
 	return result;
-}
+};
 
-var formatArrow = function(type) {
+Panel.prototype._formatArrow = function(type) {
 	var node = document.createElement("strong");
 	node.style.color = (type ? "green" : "blue");
 	node.innerHTML = (type ? "←" : "→");
 	return node;
-}
-
-var createRow = function(opt) {
-	var row = document.createElement("div");
-	row.classList.add("log-line");
-
-	row.title = "Click to open in a window";
-
-	opt = opt || {};
-
-	if (opt.addBg) {
-		row.style.background = "#f3f3f3";
-	}
-	
-	row.setAttribute("data-ind", opt.ind);
-
-	var ar = [].concat(opt.values || []);
-
-	for (var i=0;i<ar.length;i++) {
-		var item = ar[i];
-		if (!item.nodeType) {
-			item = document.createTextNode(item);
-		}
-		else {
-			item = item.cloneNode(true);
-		}
-		row.appendChild(item);
-		row.appendChild(document.createTextNode(" "));
-	}
-
-	return row;
 };
 
 // format size in bytes
-var formatSize = function(size) {
+Panel.prototype._formatSize = function(size) {
 	if (typeof size !== "number") {
 		return "null";
 	}
@@ -168,10 +146,55 @@ var formatSize = function(size) {
 	var value = lv > 0 ? (size / Math.pow(1000, lv)).toFixed(2) : size;
 
 	return value + " " + sizes[lv] + "B";
-}
+};
 
-var setRequestData = function(data, header) {
-	var arrow = formatArrow(0);
+Panel.prototype._isFRPC = function(headers) {
+	for (var i=0;i<headers.length;i++) {
+		var header = headers[i];
+		if (header.name.toLowerCase() != "content-type") { continue; }
+		if (header.value == "application/x-base64-frpc" || header.value == "application/x-frpc") { return header.value; }
+	}
+
+	return false;
+};
+
+Panel.prototype._processItem = function(harEntry) {
+	var len = this._data.length;
+	var responseRow;
+
+	var request = harEntry.request;
+	var requestHeader = this._isFRPC(request.headers);
+	if (requestHeader) {
+		// request, response
+		this._data.push(null);
+		this._data.push(null);
+
+		var requestRow = document.createElement("div");
+		requestRow.classList.add("log-line");
+		requestRow.setAttribute("data-ind", len);
+
+		responseRow = document.createElement("div");
+		responseRow.innerHTML = "waiting for response...";
+		responseRow.classList.add("log-line");
+		responseRow.setAttribute("data-ind", len + 1);
+
+		this._dom.log.appendChild(requestRow);
+		this._dom.log.appendChild(responseRow);
+
+		this._setRequest(requestRow, len, request, requestHeader);
+	}
+
+	var response = harEntry.response;
+	var responseHeader = this._isFRPC(response.headers);
+	if (responseHeader) { 
+		harEntry.getContent(function(content) {
+			this._setResponse(responseRow, len + 1, response, content, harEntry, responseHeader)
+		}.bind(this));
+	}
+};
+
+Panel.prototype._setRequest = function(el, ind, data, header) {
+	var arrow = this._formatArrow(0);
 	var dataText = data.postData.text;
 	var item;
 
@@ -183,105 +206,88 @@ var setRequestData = function(data, header) {
 		var method = document.createElement("strong");
 		method.innerHTML = parsed.method;
 
-		var callParams = formatCallParams(parsed.params);
+		var callParams = this._formatCallParams(parsed.params);
 
 		item = {
 			data: parsed.params,
 			addBg: true,
 			method: parsed.method,
-			values: ["FRPC", arrow, data.url, method, callParams],
-			ind: DATA.length
+			values: ["FRPC", arrow, data.url, method, callParams]
 		};
 	}
 	catch (e) {
 		item = {
-			ind: DATA.length,
 			data: e,
-			values: ["FRPC", arrow, formatException(e)]
+			values: ["FRPC", arrow, this._formatException(e)]
 		};
 	}
 
-	DATA.push(item);
-	oneRow(item);
-}
+	this._data[ind] = item;
+	this._fillRow(el, item);
+};
 
-var oneRow = function(opt) {
-	var logEl = document.querySelector("#log");
-	logEl.appendChild(createRow(opt));
-
-	document.body.scrollTop = document.body.scrollHeight;
-}
-
-var setResponseData = function(data, content, harEntry, header) {
-	var arrow = formatArrow(1);
+Panel.prototype._setResponse = function(el, ind, data, content, harEntry, header) {
+	var arrow = this._formatArrow(1);
 	var item;
 
 	try {
-		var decoded = atob(content);
-		if (header.indexOf("base64") > -1) { decoded = atob(decoded); }
-		var binary = decoded.split("").map(function(ch) { return ch.charCodeAt(0); });
-		var parsed = JAK.FRPC.parse(binary);
+		var parsed = [];
+
+		if (content) {
+			var decoded = atob(content);
+			if (header.indexOf("base64") > -1) { decoded = atob(decoded); }
+			var binary = decoded.split("").map(function(ch) { return ch.charCodeAt(0); });
+			parsed = JAK.FRPC.parse(binary);
+		}
 
 		item = {
-			ind: DATA.length,
 			data: parsed,
-			values: ["FRPC", arrow, harEntry.request.url, formatSize(data.bodySize)]
+			values: ["FRPC", arrow, harEntry.request.url, this._formatSize(data.bodySize)]
 		};
 	}
 	catch (e) {
 		item = {
-			ind: DATA.length,
 			data: e,
-			values: ["FRPC", arrow, formatException(e)]
+			values: ["FRPC", arrow, this._formatException(e)]
 		};
 	}
 
-	DATA.push(item);
-	oneRow(item);
-}
+	this._data[ind] = item;
+	this._fillRow(el, item);
+};
 
-var isFRPC = function(headers) {
-	for (var i=0;i<headers.length;i++) {
-		var header = headers[i];
-		if (header.name.toLowerCase() != "content-type") { continue; }
-		if (header.value == "application/x-base64-frpc" || header.value == "application/x-frpc") { return header.value; }
+Panel.prototype._fillRow = function(row, item) {
+	row.innerHTML = "";
+
+	item = item || {};
+
+	if (item.addBg) {
+		row.classList.add("add-bg");
 	}
 
-	return false;
-}
+	var ar = [].concat(item.values || []);
 
-var processItem = function(harEntry) {
-	var request = harEntry.request;
-	var requestHeader = isFRPC(request.headers);
-	if (requestHeader) { 
-		setRequestData(request, requestHeader);
+	for (var i=0;i<ar.length;i++) {
+		var item = ar[i];
+
+		if (!item.nodeType) {
+			item = document.createTextNode(item);
+		}
+		else {
+			item = item.cloneNode(true);
+		}
+
+		row.appendChild(item);
+		row.appendChild(document.createTextNode(" "));
 	}
+};
 
-	var response = harEntry.response;
-	var responseHeader = isFRPC(response.headers);
-	if (responseHeader) { 
-		harEntry.getContent(function(content) {
-			setResponseData(response, content, harEntry, responseHeader)
-		});
-	}
-}
+Panel.prototype._clearClick = function() {
+	this._data = [];
+	this._dom.log.innerHTML = "";
+};
 
-var processItems = function(result) {
-	var entries = result.entries;
-	for (var i=0;i<entries.length;i++) {
-		processItem(entries[i]);
-	}
-}
-
-chrome.devtools.network.onRequestFinished.addListener(processItem);
-chrome.devtools.network.getHAR(processItems);
-
-document.querySelector("#clear").addEventListener("click", function(e) {
-	DATA = [];
-	document.querySelector("#log").innerHTML = "";
-});
-
-document.querySelector("#log").addEventListener("click", function(e) {
+Panel.prototype._logClick = function(e) {
 	var target = e.target;
 	var ind;
 
@@ -302,8 +308,8 @@ document.querySelector("#log").addEventListener("click", function(e) {
 
 	ind = parseInt(ind, 10);
 
-	if (ind >= 0 && ind < DATA.length) {
-		var data = DATA[ind];
+	if (ind >= 0 && ind < this._data.length) {
+		var data = this._data[ind];
 		var w = window.open("about:blank", "");
 		var jsonPre = document.createElement("pre");
 		var jsonData = data.data;
@@ -422,4 +428,6 @@ document.querySelector("#log").addEventListener("click", function(e) {
 
 		w.document.body.appendChild(jsonPre);
 	}
-});
+};
+
+new Panel();

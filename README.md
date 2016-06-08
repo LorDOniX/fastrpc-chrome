@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.8` - 8. 6. 2016
+- párování requestů, refaktoring, podbarvení aktuálního řádku
+
 `1.0.7` - 24. 5. 2016
 - podbarvení parametrů FRPC volání - nižší úrovně
 
