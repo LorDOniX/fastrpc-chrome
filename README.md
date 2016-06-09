@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.9` - 9. 6. 2016
+- bugfix forEach a chybějící this
+
 `1.0.8` - 8. 6. 2016
 - párování requestů, refaktoring, podbarvení aktuálního řádku
 

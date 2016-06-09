@@ -37,7 +37,7 @@ Panel.prototype._formatCallParams = function(data, output, lvl) {
 					if (ind != item.length - 1) {
 						output.appendChild(document.createTextNode(", "));
 					}
-				});
+				}, this);
 			}
 
 			output.appendChild(document.createTextNode("]"));
