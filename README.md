@@ -23,6 +23,10 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.11` - 20. 6. 2016
+- update frpc knihovny
+- u odpovědi zobrazení metody v novém okně; úprava titulku nového okna
+
 `1.0.9` - 9. 6. 2016
 - bugfix forEach a chybějící this
 

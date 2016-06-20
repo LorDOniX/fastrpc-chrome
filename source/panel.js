@@ -188,7 +188,7 @@ Panel.prototype._processItem = function(harEntry) {
 	var responseHeader = this._isFRPC(response.headers);
 	if (responseHeader) { 
 		harEntry.getContent(function(content) {
-			this._setResponse(responseRow, len + 1, response, content, harEntry, responseHeader)
+			this._setResponse(responseRow, len + 1, response, content, responseHeader);
 		}.bind(this));
 	}
 };
@@ -212,6 +212,7 @@ Panel.prototype._setRequest = function(el, ind, data, header) {
 			data: parsed.params,
 			addBg: true,
 			method: parsed.method,
+			url: data.url,
 			values: ["FRPC", arrow, data.url, method, callParams]
 		};
 	}
@@ -226,7 +227,7 @@ Panel.prototype._setRequest = function(el, ind, data, header) {
 	this._fillRow(el, item);
 };
 
-Panel.prototype._setResponse = function(el, ind, data, content, harEntry, header) {
+Panel.prototype._setResponse = function(el, ind, data, content, header) {
 	var arrow = this._formatArrow(1);
 	var item;
 
@@ -240,9 +241,16 @@ Panel.prototype._setResponse = function(el, ind, data, content, harEntry, header
 			parsed = JAK.FRPC.parse(binary);
 		}
 
+		var request = this._data[ind - 1];
+
+		var method = document.createElement("strong");
+		method.innerHTML = request.method;
+		method.classList.add("response-method");
+
 		item = {
 			data: parsed,
-			values: ["FRPC", arrow, harEntry.request.url, this._formatSize(data.bodySize)]
+			url: request.url,
+			values: ["FRPC", arrow, request.url, method, this._formatSize(data.bodySize)]
 		};
 	}
 	catch (e) {
@@ -427,6 +435,11 @@ Panel.prototype._logClick = function(e) {
 		w.document.body.appendChild(buttonCover);
 
 		w.document.body.appendChild(jsonPre);
+
+		var script = document.createElement("script");
+		script.innerHTML = 'var title = document.createElement("title"); title.innerHTML = "{0}"; document.head.appendChild(title);'.replace("{0}", "FRPC Plugin: " + data.url);
+
+		w.document.body.appendChild(script);
 	}
 };
 
