@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.0.12` - 21. 7. 2016
+- fix zobrazení velikosti FRPC requestu (1000 vs 1024)
+
 `1.0.11` - 20. 6. 2016
 - update frpc knihovny
 - u odpovědi zobrazení metody v novém okně; úprava titulku nového okna

@@ -138,12 +138,12 @@ Panel.prototype._formatSize = function(size) {
 		return "null";
 	}
 
-	var lv = size > 0 ? Math.floor(Math.log(size) / Math.log(1000)) : 0;
+	var lv = size > 0 ? Math.floor(Math.log(size) / Math.log(1024)) : 0;
 	var sizes = ["", "K", "M", "G", "T"];
 
 	lv = Math.min(sizes.length, lv);
 	
-	var value = lv > 0 ? (size / Math.pow(1000, lv)).toFixed(2) : size;
+	var value = lv > 0 ? (size / Math.pow(1024, lv)).toFixed(2) : size;
 
 	return value + " " + sizes[lv] + "B";
 };
