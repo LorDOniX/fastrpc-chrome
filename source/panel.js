@@ -7,6 +7,8 @@ var Panel = function() {
 	this._dom.log.addEventListener("click", this._logClick.bind(this));
 
 	chrome.devtools.network.onRequestFinished.addListener(this._processItem.bind(this));
+
+	chrome.devtools.network.onNavigated.addListener(this._clearClick.bind(this));
 };
 
 Panel.prototype._formatCallParams = function(data, output, lvl) {
