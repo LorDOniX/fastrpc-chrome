@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.1.0` - 4. 8. 2016
+- mazání výsledků při refreshi stránky
+
 `1.0.12` - 21. 7. 2016
 - fix zobrazení velikosti FRPC requestu (1000 vs 1024)
 
