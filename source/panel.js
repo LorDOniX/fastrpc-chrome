@@ -297,6 +297,69 @@ Panel.prototype._clearClick = function() {
 	this._dom.log.innerHTML = "";
 };
 
+Panel.prototype._cloneValue = function(value, lvl, info) {
+	info = info || {
+		collapse: false,
+		collapseAt: 0,
+		cutArrayLen: 0
+	};
+
+	lvl = lvl || 0;
+
+	// recursive call threshold
+	if (lvl > 100) return null;
+
+	switch (typeof value) {
+		case "object":
+			if (Array.isArray(value)) {
+				// array
+				var newArray = [];
+
+				value.every(function(item, ind) {
+					if (info.collapseAt && ind >= info.collapseAt) {
+						info.collapse = true;
+					}
+
+					if (info.cutArrayLen && ind >= info.cutArrayLen) {
+						return false;
+					}
+
+					newArray.push(this._cloneValue(item, lvl + 1, info));
+
+					return true;
+				}, this);
+
+				return newArray;
+			}
+			else if (value && value instanceof Date) {
+				// date
+				return new Date(value.getTime());
+			}
+			else if (value) {
+				// object
+				var newObj = {};
+
+				Object.keys(value).forEach(function(prop) {
+					if (value.hasOwnProperty(prop)) {
+						newObj[prop] = this._cloneValue(value[prop], lvl + 1, info);
+					}
+				}, this);
+
+				return newObj;
+			}
+			else {
+				// null
+				return null;
+			}
+
+		case "undefined":
+		case "function":
+		case "number":
+		case "string":
+			return value;
+	}
+};
+
 Panel.prototype._logClick = function(e) {
 	var target = e.target;
 	var ind;
@@ -322,11 +385,14 @@ Panel.prototype._logClick = function(e) {
 		var data = this._data[ind];
 		var w = window.open("about:blank", "");
 		var jsonPre = document.createElement("pre");
-		var jsonData = data.data;
 
-		$(jsonPre).jsonViewer(jsonData, {
-			collapsed: false
-		});
+		var info = {
+			collapse: false,
+			collapseAt: 99,
+			cutArrayLen: 500
+		};
+		var jsonData = this._cloneValue(data.data, 0, info);
+		var collapsed = info.collapse;
 
 		var p = document.createElement("p");
 		p.style.fontSize = "20px";
@@ -351,7 +417,6 @@ Panel.prototype._logClick = function(e) {
 		    p.appendChild(span);
 		});
 
-		// https://cssminifier.com/ jquery.json-viewer.css
 		w.document.head.innerHTML = '<meta charset="utf-8"><style>' +
 		'body { font-size: 14px; }' +
 		'/* Syntax highlighting for JSON objects */'+
@@ -403,11 +468,11 @@ Panel.prototype._logClick = function(e) {
 		'</style>';
 
 		w.document.body.appendChild(p);
-
 		w.document.body.appendChild(document.createElement("hr"));
 
 		var collapseAll = document.createElement("button");
 		collapseAll.innerHTML = "Collapse to level 1";
+		collapseAll.classList.add("collapse-to-lvl1");
 		collapseAll.setAttribute("type", "button");
 		collapseAll.style.display = "inline-block";
 		collapseAll.addEventListener("click", function() {
@@ -421,6 +486,7 @@ Panel.prototype._logClick = function(e) {
 		var expandAll = document.createElement("button");
 		expandAll.innerHTML = "Expand all";
 		expandAll.style.marginLeft = "10px";
+		expandAll.style.marginRight = "10px";
 		expandAll.setAttribute("type", "button");
 		expandAll.style.display = "inline-block";
 		expandAll.addEventListener("click", function() {
@@ -430,16 +496,24 @@ Panel.prototype._logClick = function(e) {
 		});
 
 		var buttonCover = document.createElement("div");
-
 		buttonCover.appendChild(collapseAll);
 		buttonCover.appendChild(expandAll);
+		buttonCover.appendChild(document.createTextNode("Array length is now reduced to 500 items only!"));
 
 		w.document.body.appendChild(buttonCover);
+
+		$(jsonPre).jsonViewer(jsonData, {
+			collapsed: false
+		});
 
 		w.document.body.appendChild(jsonPre);
 
 		var script = document.createElement("script");
 		script.innerHTML = 'var title = document.createElement("title"); title.innerHTML = "{0}"; document.head.appendChild(title);'.replace("{0}", "FRPC Plugin: " + data.url);
+
+		if (collapsed) {
+			script.innerHTML += 'document.querySelector(".collapse-to-lvl1").click()';
+		}
 
 		w.document.body.appendChild(script);
 	}

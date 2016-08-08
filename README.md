@@ -5,7 +5,7 @@ publikováno na https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgm
 Původní zdrojové kódy jsem převzal od Ondry Žáry. Funkcionalita:
 
 - formátované a barevně podbarvené zobrazení požadavků/odpovědí ze serveru
-- jquery plugin pro zobrazení a snadnou manipulaci s JSON daty
+- jquery plugin pro zobrazení a snadnou manipulaci s JSON daty (https://github.com/abodelot/jquery.json-viewer)
 
 ## Instalace
 
@@ -22,6 +22,10 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 ![Extensions](/chrome.png)
 
 ## Changelog
+
+`1.1.1` - 8. 8. 2016
+- update jquery pluginu
+- zobrazení dat v novém okně: omezení polí na max. 500 položek, u 100 položek se výpis skryje na level 1
 
 `1.1.0` - 4. 8. 2016
 - mazání výsledků při refreshi stránky
