@@ -7,7 +7,6 @@ var Panel = function() {
 	this._dom.log.addEventListener("click", this._logClick.bind(this));
 
 	chrome.devtools.network.onRequestFinished.addListener(this._processItem.bind(this));
-
 	chrome.devtools.network.onNavigated.addListener(this._clearClick.bind(this));
 };
 
@@ -353,6 +352,7 @@ Panel.prototype._cloneValue = function(value, lvl, info) {
 			}
 
 		case "undefined":
+		case "boolean":
 		case "function":
 		case "number":
 		case "string":

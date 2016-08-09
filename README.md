@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.1.2` - 9. 8. 2016
+- bugfix zobrazení bool hodnot
+
 `1.1.1` - 8. 8. 2016
 - update jquery pluginu
 - zobrazení dat v novém okně: omezení polí na max. 500 položek, u 100 položek se výpis skryje na level 1
