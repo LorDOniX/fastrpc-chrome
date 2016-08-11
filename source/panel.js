@@ -214,6 +214,7 @@ Panel.prototype._setRequest = function(el, ind, data, header) {
 			addBg: true,
 			method: parsed.method,
 			url: data.url,
+			request: true,
 			values: ["FRPC", arrow, data.url, method, callParams]
 		};
 	}
@@ -498,8 +499,34 @@ Panel.prototype._logClick = function(e) {
 		var buttonCover = document.createElement("div");
 		buttonCover.appendChild(collapseAll);
 		buttonCover.appendChild(expandAll);
-		buttonCover.appendChild(document.createTextNode("Array length is now reduced to 500 items only!"));
 
+		if (data.request) {
+			var copyButton = document.createElement("button");
+			copyButton.innerHTML = "Copy request";
+			copyButton.style.marginRight = "10px";
+			copyButton.setAttribute("type", "button");
+			copyButton.style.display = "inline-block";
+			copyButton.addEventListener("click", function() {
+				try {
+					var request = JSON.stringify(data.data);
+					var copy = document.createElement("textarea");
+					copy.value = "(" + request.substring(1,request.length-1) + ")";
+					copy.style.position = "absolute";
+					copy.style.left = "-1000px";
+					document.body.appendChild(copy);
+		  			copy.select();
+					successful = document.execCommand('copy');
+				} catch (err) {
+					alert("Request wasn't copy");
+				}
+			});
+
+			buttonCover.appendChild(copyButton);
+		}
+
+		if (jsonData === false) {
+			buttonCover.appendChild(document.createTextNode("Array length was reduced to " + info.cutArrayLen + " items only!"));
+		}
 		w.document.body.appendChild(buttonCover);
 
 		$(jsonPre).jsonViewer(jsonData, {
