@@ -23,6 +23,12 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.1.5` - 13. 10. 2016
+- vlastní json viewer
+
+`1.1.4` - 1. 9. 2016
+- copy request
+
 `1.1.2` - 9. 8. 2016
 - bugfix zobrazení bool hodnot
 

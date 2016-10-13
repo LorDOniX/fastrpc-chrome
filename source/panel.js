@@ -385,8 +385,7 @@ Panel.prototype._logClick = function(e) {
 	if (ind >= 0 && ind < this._data.length) {
 		var data = this._data[ind];
 		var w = window.open("about:blank", "");
-		var jsonPre = document.createElement("pre");
-
+		var jsonViewer = new JSONViewer();
 		var info = {
 			collapse: false,
 			collapseAt: 99,
@@ -402,70 +401,38 @@ Panel.prototype._logClick = function(e) {
 		p.appendChild(pInfo);
 
 		data.values.forEach(function(i) {
-		    var span = document.createElement("span");
-		    span.innerHTML = "";
-		    span.style.marginLeft = "15px";
+			var span = document.createElement("span");
+			span.innerHTML = "";
+			span.style.marginLeft = "15px";
 
-		    if (i.toString().indexOf("[object HTML") != -1) {
-		        p.appendChild(i.cloneNode(true));
-		    }
-		    else {
-		        var s = document.createElement("strong");
-		        s.innerHTML = i;
-		        p.appendChild(s);
-		    }
+			if (i.toString().indexOf("[object HTML") != -1) {
+				p.appendChild(i.cloneNode(true));
+			}
+			else {
+				var s = document.createElement("strong");
+				s.innerHTML = i;
+				p.appendChild(s);
+			}
 
-		    p.appendChild(span);
+			p.appendChild(span);
 		});
 
-		w.document.head.innerHTML = '<meta charset="utf-8"><style>' +
+		w.document.head.innerHTML = 
+		'<meta charset="utf-8"><style>' +
 		'body { font-size: 14px; }' +
-		'/* Syntax highlighting for JSON objects */'+
-		'ul.json-dict, ol.json-array {'+
-		  'list-style-type: none;'+
-		  'margin: 0 0 0 1px;'+
-		  'border-left: 1px dotted #ccc;'+
-		  'padding-left: 2em;'+
-		'}'+
-		'.json-string {'+
-		  'color: #0B7500;'+
-		'}'+
-		'.json-literal {'+
-		  'color: #1A01CC;'+
-		  'font-weight: bold;'+
-		'}'+
-		''+
-		'/* Toggle button */'+
-		'a.json-toggle {'+
-		  'position: relative;'+
-		  'color: inherit;'+
-		  'text-decoration: none;'+
-		'}'+
-		'a.json-toggle:focus {'+
-		  'outline: none;'+
-		'}'+
-		'a.json-toggle:before {'+
-		  'color: #aaa;'+
-		  'content: "\\25BC"; /* down arrow */'+
-		  'position: absolute;'+
-		  'display: inline-block;'+
-		  'width: 1em;'+
-		  'left: -1em;'+
-		'}'+
-		'a.json-toggle.collapsed:before {'+
-		  'content: "\\25B6"; /* left arrow */'+
-		'}'+
-		''+
-		'/* Collapsable placeholder links */'+
-		'a.json-placeholder {'+
-		  'color: #aaa;'+
-		  'padding: 0 1em;'+
-		  'text-decoration: none;'+
-		'}'+
-		'a.json-placeholder:hover {'+
-		  'text-decoration: underline;'+
-		'}'+
-		'pre { padding: 0.5em 1.5em; }' +
+		'.json-viewer {color: #000;padding-left: 20px;}'+
+		'.json-viewer ul {list-style-type: none;margin: 0;margin: 0 0 0 1px;border-left: 1px dotted #ccc;padding-left: 2em;}'+
+		'.json-viewer .hide {display: none;}'+
+		'.json-viewer ul li .type-string {color: #0B7500;}'+
+		'.json-viewer ul li .type-boolean {color: #1A01CC;font-weight: bold;}'+
+		'.json-viewer ul li .type-number {color: #1A01CC;}'+
+		'.json-viewer ul li .type-null {color: red;}'+
+		'.json-viewer a.list-link {color: #000;text-decoration: none;position: relative;}'+
+		'.json-viewer a.list-link:before {color: #aaa;content: "\\25BC";position: absolute;display: inline-block;width: 1em;left: -1em;}'+
+		'.json-viewer a.list-link.collapsed:before {content: "\\25B6";top: -1px;}'+
+		'.json-viewer a.list-link.empty:before {content: "";}'+
+		'.json-viewer .items-ph {color: #aaa;padding: 0 1em;}'+
+		'.json-viewer .items-ph:hover {text-decoration: underline;}'+
 		'</style>';
 
 		w.document.body.appendChild(p);
@@ -477,11 +444,7 @@ Panel.prototype._logClick = function(e) {
 		collapseAll.setAttribute("type", "button");
 		collapseAll.style.display = "inline-block";
 		collapseAll.addEventListener("click", function() {
-			$(jsonPre).jsonViewer(jsonData, {
-				collapsed: true
-			});
-
-			$(jsonPre).find("a.json-placeholder:visible").first().click();
+			jsonViewer.showJSON(jsonData, -1, 1);
 		});
 
 		var expandAll = document.createElement("button");
@@ -491,9 +454,7 @@ Panel.prototype._logClick = function(e) {
 		expandAll.setAttribute("type", "button");
 		expandAll.style.display = "inline-block";
 		expandAll.addEventListener("click", function() {
-			$(jsonPre).jsonViewer(jsonData, {
-				collapsed: false
-			});
+			jsonViewer.showJSON(jsonData);
 		});
 
 		var buttonCover = document.createElement("div");
@@ -514,7 +475,7 @@ Panel.prototype._logClick = function(e) {
 					copy.style.position = "absolute";
 					copy.style.left = "-1000px";
 					document.body.appendChild(copy);
-		  			copy.select();
+					copy.select();
 					successful = document.execCommand('copy');
 				} catch (err) {
 					alert("Request wasn't copy");
@@ -527,20 +488,14 @@ Panel.prototype._logClick = function(e) {
 		if (jsonData === false) {
 			buttonCover.appendChild(document.createTextNode("Array length was reduced to " + info.cutArrayLen + " items only!"));
 		}
+
 		w.document.body.appendChild(buttonCover);
+		w.document.body.appendChild(jsonViewer.getContainer());
 
-		$(jsonPre).jsonViewer(jsonData, {
-			collapsed: false
-		});
-
-		w.document.body.appendChild(jsonPre);
+		jsonViewer.showJSON(jsonData);
 
 		var script = document.createElement("script");
 		script.innerHTML = 'var title = document.createElement("title"); title.innerHTML = "{0}"; document.head.appendChild(title);'.replace("{0}", "FRPC Plugin: " + data.url);
-
-		if (collapsed) {
-			script.innerHTML += 'document.querySelector(".collapse-to-lvl1").click()';
-		}
 
 		w.document.body.appendChild(script);
 	}
