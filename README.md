@@ -23,6 +23,9 @@ Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, s
 
 ## Changelog
 
+`1.1.6` - 13. 10. 2016
+- bugfix json viewer - datum
+
 `1.1.5` - 13. 10. 2016
 - vlastní json viewer
 
