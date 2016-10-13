@@ -423,7 +423,7 @@ Panel.prototype._logClick = function(e) {
 		'.json-viewer {color: #000;padding-left: 20px;}'+
 		'.json-viewer ul {list-style-type: none;margin: 0;margin: 0 0 0 1px;border-left: 1px dotted #ccc;padding-left: 2em;}'+
 		'.json-viewer .hide {display: none;}'+
-		'.json-viewer ul li .type-string {color: #0B7500;}'+
+		'.json-viewer ul li .type-string, .json-viewer ul li .type-date {color: #0B7500;}'+
 		'.json-viewer ul li .type-boolean {color: #1A01CC;font-weight: bold;}'+
 		'.json-viewer ul li .type-number {color: #1A01CC;}'+
 		'.json-viewer ul li .type-null {color: red;}'+

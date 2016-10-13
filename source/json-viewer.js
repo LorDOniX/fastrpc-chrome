@@ -93,10 +93,10 @@ JSONViewer = (function() {
 							if (typeof item === "object") {
 								var isEmpty = false;
 
-								// null
-								if (!item) {
-									li.appendChild(document.createTextNode(key + ": "));
-									li.appendChild(this._createSimple(null));
+								// null && date
+								if (!item || item instanceof Date) {
+									li.appendChild(document.createTextNode(isArray ? "" : key + ": "));
+									li.appendChild(this._createSimple(item ? item : null));
 								}
 								// array & object
 								else {
@@ -213,6 +213,10 @@ JSONViewer = (function() {
 		}
 		else if (value === undefined) {
 			txt = "undefined";
+		}
+		else if (value instanceof Date) {
+			type = "date";
+			txt = value.toString();
 		}
 
 		spanEl.classList.add("type-" + type);
