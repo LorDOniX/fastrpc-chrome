@@ -5,7 +5,7 @@ publikováno na https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgm
 Původní zdrojové kódy jsem převzal od Ondry Žáry. Funkcionalita:
 
 - formátované a barevně podbarvené zobrazení požadavků/odpovědí ze serveru
-- jquery plugin pro zobrazení a snadnou manipulaci s JSON daty (https://github.com/abodelot/jquery.json-viewer)
+- vlastní zobrazení JSON v novém okně
 
 ## Instalace
 
