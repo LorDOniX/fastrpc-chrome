@@ -1,91 +1,79 @@
-# Doplněk pro Fast RPC do Google Chrome
+# Fast RPC add on for Google Chrome browser
 
-publikováno na https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgmihkckimolpjiimjgfe
+- you can download at google store https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgmihkckimolpjiimjgfe
+- request/response are logged on the list
+- request/response detail in the new window, json visualiser is used for the response data
+- original source codes belongs to Ondřej Žára
 
-Původní zdrojové kódy jsem převzal od Ondry Žáry. Funkcionalita:
+## Usage
 
-- formátované a barevně podbarvené zobrazení požadavků/odpovědí ze serveru
-- vlastní zobrazení JSON v novém okně
-
-## Instalace
-
-- použít odkaz z webstore
-- nainstalovat jako doplněk `crx` přímo do Chromu
-- nebo jako rozbalený doplněk, kde je cesta k adresáři `source`. V tomto případě je potřeba zaškrtnout `developer mode`.
-
-## Použití
-
-Po nainstalování doplňku se potom vytvoří nový panel na úrovni konzole, sítě atd.
-
-## Náhled na vývojářské nástroje
-
-![Extensions](/chrome.png)
+- after add on installation, run developer tools (F12)
+- there is new panel at the end, called "FastRPC"
 
 ## Changelog
 
+`1.1.7` - 27. 10. 2016
+- body size bug fix
+
 `1.1.6` - 13. 10. 2016
-- bugfix json viewer - datum
+- bugfix json viewer - date
 
 `1.1.5` - 13. 10. 2016
-- vlastní json viewer
+- own json viewer
 
 `1.1.4` - 1. 9. 2016
 - copy request
 
 `1.1.2` - 9. 8. 2016
-- bugfix zobrazení bool hodnot
+- bool values bugfix
 
 `1.1.1` - 8. 8. 2016
-- update jquery pluginu
-- zobrazení dat v novém okně: omezení polí na max. 500 položek, u 100 položek se výpis skryje na level 1
+- jquery plugin update
+- detail - array has 500 items limit, if there are above 100 items, whole json tree is collapsed to level 1
 
 `1.1.0` - 4. 8. 2016
-- mazání výsledků při refreshi stránky
+- clear all panel items on page refresh
 
 `1.0.12` - 21. 7. 2016
-- fix zobrazení velikosti FRPC requestu (1000 vs 1024)
+- size bugfix (1000 vs 1024)
 
 `1.0.11` - 20. 6. 2016
-- update frpc knihovny
-- u odpovědi zobrazení metody v novém okně; úprava titulku nového okna
+- frpc library update
+- detail title update
 
 `1.0.9` - 9. 6. 2016
-- bugfix forEach a chybějící this
+- forEach and this bugfix
 
 `1.0.8` - 8. 6. 2016
-- párování requestů, refaktoring, podbarvení aktuálního řádku
+- matching requests, refactor, highlight of focused line
 
 `1.0.7` - 24. 5. 2016
-- podbarvení parametrů FRPC volání - nižší úrovně
+- colored FRPC parameters
 
 `1.0.6` - 20. 5. 2016
-- podbarvené number/string u parametrů FRPC volání
+- colored number/string values in FRPC
 
 `1.0.5` - 21. 4. 2016
-- fix pluginu, který neumí zobrazovat Date
+- add support for jquery viewer and object Date
 
 `1.0.4` - 20. 4. 2016
-- fix zobrazení JSON dat (collapse, fold)
+- json collapse and fold bugfix
 
 `1.0.3` - 20. 4. 2016
-- fix zoomování v otevřeném okně
-- fix zobrazení JSON dat
+- detail zoom bugfix
+- jquery viewer bugfix
 
 `1.0.2` - 19. 4. 2016
-- zrušené párování, protože to nedělalo dobrotu
-- jquery plugin pro lepší manipulaci s JSON objektem
+- canceled matching requests - useless
+- jquery plugin for visualise json objects
 
 `1.0.1` - 1. 3. 2016
-- přidána podpora pro application/x-frpc
+- add support for the application/x-frpc
 
 `1.0.0` - 22. 2. 2016
-- upravené párování, ale i tak se občas stane, že se překryjí dvě dvojice
+- improved matching of requests - but is not 100% correct
 
-## TODO
-
-- úprava zobrazení requestů: description({firm: [...]}, {fetchPhoto:true, ratios : [...]})
-
-## Autor
+## Author
 
 Roman Makudera 2016 (c),
 Ondřej Žára,

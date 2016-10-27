@@ -252,7 +252,7 @@ Panel.prototype._setResponse = function(el, ind, data, content, header) {
 		item = {
 			data: parsed,
 			url: request.url,
-			values: ["FRPC", arrow, request.url, method, this._formatSize(data.bodySize)]
+			values: ["FRPC", arrow, request.url, method, this._formatSize(data.content.size)]
 		};
 	}
 	catch (e) {
