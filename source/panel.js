@@ -471,7 +471,7 @@ Panel.prototype._logClick = function(e) {
 				try {
 					var request = JSON.stringify(data.data);
 					var copy = document.createElement("textarea");
-					copy.value = "(" + request.substring(1,request.length-1) + ")";
+					copy.value = data.method + "(" + request.substring(1,request.length-1) + ")";
 					copy.style.position = "absolute";
 					copy.style.left = "-1000px";
 					document.body.appendChild(copy);
