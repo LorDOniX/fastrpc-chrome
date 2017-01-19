@@ -12,6 +12,9 @@
 
 ## Changelog
 
+`1.1.9` - 19. 1. 2017
+- new window mouse scroll bugfix
+
 `1.1.7` - 27. 10. 2016
 - body size bug fix
 
