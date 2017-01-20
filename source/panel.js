@@ -32,12 +32,19 @@ Panel.prototype._formatCallParams = function(data, output, lvl) {
 				output.appendChild(document.createTextNode("..."));
 			}
 			else {
-				item.forEach(function(itemX, ind) {
+				item.every(function(itemX, ind) {
 					this._formatCallParams([itemX], output, lvl + 1);
 
-					if (ind != item.length - 1) {
+					// limit to 10 items at lvl 0
+					if (ind > 10) {
+						output.appendChild(document.createTextNode(",..."));
+						return false;
+					}
+					else if (ind != item.length - 1) {
 						output.appendChild(document.createTextNode(", "));
 					}
+
+					return true;
 				}, this);
 			}
 

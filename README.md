@@ -12,6 +12,9 @@
 
 ## Changelog
 
+`1.2.0` - 20. 1. 2017
+- fir for long array in the list output; limit to 10 items
+
 `1.1.9` - 19. 1. 2017
 - new window mouse scroll bugfix
 
