@@ -8,12 +8,12 @@
 ## Usage
 
 - after add on installation, run developer tools (F12)
-- there is new panel at the end, called "FastRPC"
+- there is a new panel in the end called "FastRPC"
 
 ## Changelog
 
 `1.2.0` - 20. 1. 2017
-- fir for long array in the list output; limit to 10 items
+- fix for long array in the list output; limit to 10 items
 
 `1.1.9` - 19. 1. 2017
 - new window mouse scroll bugfix
