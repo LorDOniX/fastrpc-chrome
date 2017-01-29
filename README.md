@@ -3,7 +3,6 @@
 - you can download at google store https://chrome.google.com/webstore/detail/fastrpc/fndmaalidmchgmihkckimolpjiimjgfe
 - request/response are logged on the list
 - request/response detail in the new window, json visualiser is used for the response data
-- original source codes belongs to Ondřej Žára
 
 ## Usage
 
@@ -82,5 +81,4 @@
 ## Author
 
 Roman Makudera 2016 (c),
-Ondřej Žára,
 Honza Štěpán
