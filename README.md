@@ -11,6 +11,10 @@
 
 ## Changelog
 
+`1.2.1` - 21. 8. 2017
+- info about cutted arrays (above 500 items)
+- show original array size in the json viewer
+
 `1.2.0` - 20. 1. 2017
 - fix for long array in the list output; limit to 10 items
 

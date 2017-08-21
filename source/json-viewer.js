@@ -23,13 +23,15 @@ JSONViewer = (function() {
 	 * @param  {Object|Array} json
 	 * @param  {Number} [maxLvl] 0..n, -1 unlimited
 	 * @param  {Number} [colAt] collapse at
+	 * @param  {Array} [cutArray] Cuted arrays list
 	 */
-	JSONViewer.prototype.showJSON = function(json, maxLvl, colAt) {
+	JSONViewer.prototype.showJSON = function(json, maxLvl, colAt, cutArray) {
 		maxLvl = typeof maxLvl === "number" ? maxLvl : -1; // max level
 		colAt = typeof colAt === "number" ? colAt : -1; // collapse at
+		cutArray = cutArray || [];
 
 		var jsonData = this._processInput(json);
-		var walkEl = this._walk(jsonData, maxLvl, colAt, 0);
+		var walkEl = this._walk(jsonData, maxLvl, colAt, 0, cutArray);
 
 		this._dom.container.innerHTML = "";
 		this._dom.container.appendChild(walkEl);
@@ -39,7 +41,7 @@ JSONViewer = (function() {
 		return this._dom.container;
 	};
 
-	JSONViewer.prototype._walk = function(value, maxLvl, colAt, lvl) {
+	JSONViewer.prototype._walk = function(value, maxLvl, colAt, lvl, cutArray) {
 		var frag = document.createDocumentFragment();
 		var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
 		var isCollapse = colAt >= 0 && lvl >= colAt;
@@ -111,7 +113,21 @@ JSONViewer = (function() {
 										// 1+ items
 										var itemTitle = (typeof key === "string" ? key + ": " : "") + (itemIsArray ? "[" : "{");
 										var itemLink = this._createLink(itemTitle);
-										var itemsCount = this._createItemsCount(itemLen);
+										var origCount = null;
+
+										if (itemIsArray) {
+											cutArray.every(function(cutItem) {
+												if (cutItem.array == item) {
+													origCount = cutItem.len;
+													return false;
+												}
+												else {
+													return true;
+												}
+											});
+										}
+
+										var itemsCount = this._createItemsCount(itemLen, origCount);
 
 										// maxLvl - only text, no link
 										if (maxLvl >= 0 && lvl + 1 >= maxLvl) {
@@ -122,7 +138,7 @@ JSONViewer = (function() {
 											li.appendChild(itemLink);
 										}
 
-										li.appendChild(this._walk(item, maxLvl, colAt, lvl + 1));
+										li.appendChild(this._walk(item, maxLvl, colAt, lvl + 1, cutArray));
 										li.appendChild(document.createTextNode(itemIsArray ? "]" : "}"));
 										
 										var list = li.querySelector("ul");
@@ -150,7 +166,7 @@ JSONViewer = (function() {
 								}
 
 								// recursive
-								li.appendChild(this._walk(item, maxLvl, colAt, lvl + 1));
+								li.appendChild(this._walk(item, maxLvl, colAt, lvl + 1, cutArray));
 							}
 
 							// add comma to the end
@@ -225,19 +241,20 @@ JSONViewer = (function() {
 		return spanEl;
 	};
 
-	JSONViewer.prototype._createItemsCount = function(count) {
+	JSONViewer.prototype._createItemsCount = function(count, origCount) {
 		var itemsCount = document.createElement("span");
 		itemsCount.classList.add("items-ph");
 		itemsCount.classList.add("hide");
-		itemsCount.innerHTML = this._getItemsTitle(count);
+		itemsCount.innerHTML = this._getItemsTitle(count, origCount);
 
 		return itemsCount;
 	};
 
-	JSONViewer.prototype._getItemsTitle = function(len) {
+	JSONViewer.prototype._getItemsTitle = function(len, origCount) {
 		var itemsTxt = len > 1 || len === 0 ? "items" : "item";
+		var orig = typeof origCount === "number" ? "/" + origCount : "";
 
-		return (len + " " + itemsTxt);
+		return (len + orig + " " + itemsTxt);
 	};
 
 	JSONViewer.prototype._createLink = function(title) {

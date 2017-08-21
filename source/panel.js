@@ -1,4 +1,8 @@
 var Panel = function() {
+	this._const = {
+		CUT_ARRAYS: 500,
+		MAX_CLONE_VALUE_LVL: 100
+	};
 	this._data = [];
 	this._dom = {};
 	this._dom.log = document.querySelector("#log");
@@ -308,13 +312,14 @@ Panel.prototype._cloneValue = function(value, lvl, info) {
 	info = info || {
 		collapse: false,
 		collapseAt: 0,
-		cutArrayLen: 0
+		cutArrayLen: 0,
+		cutArrays: []
 	};
 
 	lvl = lvl || 0;
 
 	// recursive call threshold
-	if (lvl > 100) return null;
+	if (lvl > this._const.MAX_CLONE_VALUE_LVL) return null;
 
 	switch (typeof value) {
 		case "object":
@@ -328,6 +333,10 @@ Panel.prototype._cloneValue = function(value, lvl, info) {
 					}
 
 					if (info.cutArrayLen && ind >= info.cutArrayLen) {
+						info.cutArrays.push({
+							array: newArray,
+							len: value.length
+						});
 						return false;
 					}
 
@@ -396,7 +405,8 @@ Panel.prototype._logClick = function(e) {
 		var info = {
 			collapse: false,
 			collapseAt: 99,
-			cutArrayLen: 500
+			cutArrayLen: this._const.CUT_ARRAYS,
+			cutArrays: []
 		};
 		var jsonData = this._cloneValue(data.data, 0, info);
 		var collapsed = info.collapse;
@@ -452,7 +462,7 @@ Panel.prototype._logClick = function(e) {
 		collapseAll.setAttribute("type", "button");
 		collapseAll.style.display = "inline-block";
 		collapseAll.addEventListener("click", function() {
-			jsonViewer.showJSON(jsonData, -1, 1);
+			jsonViewer.showJSON(jsonData, -1, 1, info.cutArrays);
 		});
 
 		var expandAll = document.createElement("button");
@@ -462,7 +472,7 @@ Panel.prototype._logClick = function(e) {
 		expandAll.setAttribute("type", "button");
 		expandAll.style.display = "inline-block";
 		expandAll.addEventListener("click", function() {
-			jsonViewer.showJSON(jsonData);
+			jsonViewer.showJSON(jsonData, undefined, undefined, info.cutArrays);
 		});
 
 		var buttonCover = document.createElement("div");
@@ -493,14 +503,14 @@ Panel.prototype._logClick = function(e) {
 			buttonCover.appendChild(copyButton);
 		}
 
-		if (jsonData === false) {
+		if (info.cutArrays.length) {
 			buttonCover.appendChild(document.createTextNode("Array length was reduced to " + info.cutArrayLen + " items only!"));
 		}
 
 		w.document.body.appendChild(buttonCover);
 		w.document.body.appendChild(jsonViewer.getContainer());
 
-		jsonViewer.showJSON(jsonData);
+		jsonViewer.showJSON(jsonData, undefined, undefined, info.cutArrays);
 
 		var script = document.createElement("script");
 		script.innerHTML = 
