@@ -11,6 +11,9 @@
 
 ## Changelog
 
+`1.2.2` - 14. 9. 2017
+- json viewer fix
+
 `1.2.1` - 21. 8. 2017
 - info about cutted arrays (above 500 items)
 - show original array size in the json viewer

@@ -107,7 +107,7 @@ JSONViewer = (function() {
 
 									// empty
 									if (!itemLen) {
-										li.appendChild(document.createTextNode(key + ": " + (itemIsArray ? "[]" : "{}")));
+										li.appendChild(document.createTextNode((typeof key === "string"? key + ": " : "") + (itemIsArray ? "[]" : "{}")));
 									}
 									else {
 										// 1+ items
