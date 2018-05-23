@@ -479,6 +479,27 @@ Panel.prototype._logClick = function(e) {
 		buttonCover.appendChild(collapseAll);
 		buttonCover.appendChild(expandAll);
 
+		var copyResponseButton = document.createElement("button");
+		copyResponseButton.innerHTML = "Copy response";
+		copyResponseButton.style.marginRight = "10px";
+		copyResponseButton.setAttribute("type", "button");
+		copyResponseButton.style.display = "inline-block";
+		copyResponseButton.addEventListener("click", function() {
+			try {
+				var copy = document.createElement("textarea");
+				copy.value = JSON.stringify(data.data, null, "\t");
+				copy.style.position = "absolute";
+				copy.style.left = "-1000px";
+				document.body.appendChild(copy);
+				copy.select();
+				successful = document.execCommand('copy');
+			} catch (err) {
+				alert("Response wasn't copy");
+			}
+		});
+
+		buttonCover.appendChild(copyResponseButton);
+
 		if (data.request) {
 			var copyButton = document.createElement("button");
 			copyButton.innerHTML = "Copy request";
@@ -487,7 +508,7 @@ Panel.prototype._logClick = function(e) {
 			copyButton.style.display = "inline-block";
 			copyButton.addEventListener("click", function() {
 				try {
-					var request = JSON.stringify(data.data);
+					var request = JSON.stringify(data.data, null, "\t");
 					var copy = document.createElement("textarea");
 					copy.value = data.method + "(" + request.substring(1,request.length-1) + ")";
 					copy.style.position = "absolute";

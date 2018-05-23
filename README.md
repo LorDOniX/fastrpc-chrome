@@ -11,6 +11,9 @@
 
 ## Changelog
 
+`1.2.3` - 23. 5. 2018
+- add copy json request button
+
 `1.2.2` - 14. 9. 2017
 - json viewer fix
 
