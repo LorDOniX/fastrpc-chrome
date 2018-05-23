@@ -479,50 +479,36 @@ Panel.prototype._logClick = function(e) {
 		buttonCover.appendChild(collapseAll);
 		buttonCover.appendChild(expandAll);
 
-		var copyResponseButton = document.createElement("button");
-		copyResponseButton.innerHTML = "Copy response";
-		copyResponseButton.style.marginRight = "10px";
-		copyResponseButton.setAttribute("type", "button");
-		copyResponseButton.style.display = "inline-block";
-		copyResponseButton.addEventListener("click", function() {
+		var copyButton = document.createElement("button");
+		copyButton.innerHTML = data.request ? "Copy request" : "Copy response";
+		copyButton.style.marginRight = "10px";
+		copyButton.setAttribute("type", "button");
+		copyButton.style.display = "inline-block";
+		copyButton.addEventListener("click", function() {
 			try {
+				var value;
+
+				if (data.request) {
+					value = JSON.stringify(data.data);
+					value = data.method + "(" + value.substring(1, value.length - 1) + ")";
+				}
+				else {
+					value = JSON.stringify(data.data, null, "\t");
+				}
+
 				var copy = document.createElement("textarea");
-				copy.value = JSON.stringify(data.data, null, "\t");
+				copy.value = value;
 				copy.style.position = "absolute";
 				copy.style.left = "-1000px";
 				document.body.appendChild(copy);
 				copy.select();
 				successful = document.execCommand('copy');
 			} catch (err) {
-				alert("Response wasn't copy");
+				alert("Request/response wasn't copy");
 			}
 		});
 
-		buttonCover.appendChild(copyResponseButton);
-
-		if (data.request) {
-			var copyButton = document.createElement("button");
-			copyButton.innerHTML = "Copy request";
-			copyButton.style.marginRight = "10px";
-			copyButton.setAttribute("type", "button");
-			copyButton.style.display = "inline-block";
-			copyButton.addEventListener("click", function() {
-				try {
-					var request = JSON.stringify(data.data, null, "\t");
-					var copy = document.createElement("textarea");
-					copy.value = data.method + "(" + request.substring(1,request.length-1) + ")";
-					copy.style.position = "absolute";
-					copy.style.left = "-1000px";
-					document.body.appendChild(copy);
-					copy.select();
-					successful = document.execCommand('copy');
-				} catch (err) {
-					alert("Request wasn't copy");
-				}
-			});
-
-			buttonCover.appendChild(copyButton);
-		}
+		buttonCover.appendChild(copyButton);
 
 		if (info.cutArrays.length) {
 			buttonCover.appendChild(document.createTextNode("Array length was reduced to " + info.cutArrayLen + " items only!"));

@@ -11,6 +11,9 @@
 
 ## Changelog
 
+`1.2.4` - 23. 5. 2018
+- fix two buttons - response, request
+
 `1.2.3` - 23. 5. 2018
 - add copy json request button
 
