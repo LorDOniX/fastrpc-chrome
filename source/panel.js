@@ -1,3 +1,5 @@
+import * as fastrpc from "./fastrpc.js";
+
 var Panel = function() {
 	this._const = {
 		CUT_ARRAYS: 500,
@@ -213,7 +215,7 @@ Panel.prototype._setRequest = function(el, ind, data, header) {
 	try {
 		if (header.indexOf("base64") > -1) { dataText = atob(dataText); }
 		var binary = dataText.split("").map(function(ch) { return ch.charCodeAt(0); })
-		var parsed = JAK.FRPC.parse(binary);
+		var parsed = fastrpc.parse(binary);
 
 		var method = document.createElement("strong");
 		method.innerHTML = parsed.method;
@@ -251,7 +253,7 @@ Panel.prototype._setResponse = function(el, ind, data, content, header) {
 			var decoded = atob(content);
 			if (header.indexOf("base64") > -1) { decoded = atob(decoded); }
 			var binary = decoded.split("").map(function(ch) { return ch.charCodeAt(0); });
-			parsed = JAK.FRPC.parse(binary);
+			parsed = fastrpc.parse(binary);
 		}
 
 		var request = this._data[ind - 1];
@@ -400,133 +402,8 @@ Panel.prototype._logClick = function(e) {
 
 	if (ind >= 0 && ind < this._data.length) {
 		var data = this._data[ind];
-		var w = window.open("about:blank", "");
-		var jsonViewer = new JSONViewer();
-		var info = {
-			collapse: false,
-			collapseAt: 99,
-			cutArrayLen: this._const.CUT_ARRAYS,
-			cutArrays: []
-		};
-		var jsonData = this._cloneValue(data.data, 0, info);
-		var collapsed = info.collapse;
-
-		var p = document.createElement("p");
-		p.style.fontSize = "20px";
-		var pInfo = document.createElement("span");
-		pInfo.innerHTML = "";
-		p.appendChild(pInfo);
-
-		data.values.forEach(function(i) {
-			var span = document.createElement("span");
-			span.innerHTML = "";
-			span.style.marginLeft = "15px";
-
-			if (i.toString().indexOf("[object HTML") != -1) {
-				p.appendChild(i.cloneNode(true));
-			}
-			else {
-				var s = document.createElement("strong");
-				s.innerHTML = i;
-				p.appendChild(s);
-			}
-
-			p.appendChild(span);
-		});
-
-		w.document.head.innerHTML = 
-		'<meta charset="utf-8"><style>' +
-		'html { width: 100%; height: 100%; overflow: hidden; }\n' +
-		'body { font-size: 14px; height: 100%; overflow: scroll; }\n' +
-		'.json-viewer {color: #000;padding-left: 20px;}\n'+
-		'.json-viewer ul {list-style-type: none;margin: 0;margin: 0 0 0 1px;border-left: 1px dotted #ccc;padding-left: 2em;}\n'+
-		'.json-viewer .hide {display: none;}\n'+
-		'.json-viewer ul li .type-string, .json-viewer ul li .type-date {color: #0B7500;}\n'+
-		'.json-viewer ul li .type-boolean {color: #1A01CC;font-weight: bold;}\n'+
-		'.json-viewer ul li .type-number {color: #1A01CC;}\n'+
-		'.json-viewer ul li .type-null {color: red;}\n'+
-		'.json-viewer a.list-link {color: #000;text-decoration: none;position: relative;}\n'+
-		'.json-viewer a.list-link:before {color: #aaa;content: "\\25BC";position: absolute;display: inline-block;width: 1em;left: -1em;}\n'+
-		'.json-viewer a.list-link.collapsed:before {content: "\\25B6";top: -1px;}\n'+
-		'.json-viewer a.list-link.empty:before {content: "";}\n'+
-		'.json-viewer .items-ph {color: #aaa;padding: 0 1em;}\n'+
-		'.json-viewer .items-ph:hover {text-decoration: underline;}\n'+
-		'</style>';
-
-		w.document.body.appendChild(p);
-		w.document.body.appendChild(document.createElement("hr"));
-
-		var collapseAll = document.createElement("button");
-		collapseAll.innerHTML = "Collapse to level 1";
-		collapseAll.classList.add("collapse-to-lvl1");
-		collapseAll.setAttribute("type", "button");
-		collapseAll.style.display = "inline-block";
-		collapseAll.addEventListener("click", function() {
-			jsonViewer.showJSON(jsonData, -1, 1, info.cutArrays);
-		});
-
-		var expandAll = document.createElement("button");
-		expandAll.innerHTML = "Expand all";
-		expandAll.style.marginLeft = "10px";
-		expandAll.style.marginRight = "10px";
-		expandAll.setAttribute("type", "button");
-		expandAll.style.display = "inline-block";
-		expandAll.addEventListener("click", function() {
-			jsonViewer.showJSON(jsonData, undefined, undefined, info.cutArrays);
-		});
-
-		var buttonCover = document.createElement("div");
-		buttonCover.appendChild(collapseAll);
-		buttonCover.appendChild(expandAll);
-
-		var copyButton = document.createElement("button");
-		copyButton.innerHTML = data.request ? "Copy request" : "Copy response";
-		copyButton.style.marginRight = "10px";
-		copyButton.setAttribute("type", "button");
-		copyButton.style.display = "inline-block";
-		copyButton.addEventListener("click", function() {
-			try {
-				var value;
-
-				if (data.request) {
-					value = JSON.stringify(data.data);
-					value = data.method + "(" + value.substring(1, value.length - 1) + ")";
-				}
-				else {
-					value = JSON.stringify(data.data, null, "\t");
-				}
-
-				var copy = document.createElement("textarea");
-				copy.value = value;
-				copy.style.position = "absolute";
-				copy.style.left = "-1000px";
-				document.body.appendChild(copy);
-				copy.select();
-				successful = document.execCommand('copy');
-			} catch (err) {
-				alert("Request/response wasn't copy");
-			}
-		});
-
-		buttonCover.appendChild(copyButton);
-
-		if (info.cutArrays.length) {
-			buttonCover.appendChild(document.createTextNode("Array length was reduced to " + info.cutArrayLen + " items only!"));
-		}
-
-		w.document.body.appendChild(buttonCover);
-		w.document.body.appendChild(jsonViewer.getContainer());
-
-		jsonViewer.showJSON(jsonData, undefined, undefined, info.cutArrays);
-
-		var script = document.createElement("script");
-		script.innerHTML = 
-			'var title = document.createElement("title");\n' +
-			'title.innerHTML = "{0}";\n'.replace("{0}", "FRPC Plugin: " + data.url) +
-			'document.head.appendChild(title);\n'
-		;
-
-		w.document.body.appendChild(script);
+		let cmd = `console.log(${JSON.stringify(data)})`;
+		chrome.devtools.inspectedWindow.eval(cmd);
 	}
 };
 
