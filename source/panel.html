@@ -2,48 +2,24 @@
 <html>
 	<head>
 		<meta charset="utf-8" />
-
-		<style>
-			body {
-				margin: 0;
-			}
-			#log .log-line {
-				border-bottom: 1px solid #666;
-				font-family: monospace;
-				font-size: 13px;
-				padding: 2px;
-				color: #333;
-				cursor: pointer;
-			}
-
-			#log .log-line.add-bg {
-				background: #f3f3f3;
-			}
-
-			#log .log-line:hover {
-				background: #d8d0d0;
-			}
-
-			#log .log-line .response-method {
-				display: none;
-			}
-
-			#clear {
-				position: fixed;
-				right: 0;
-				bottom: 0;
-				width: 30px;
-				height: 21px;
-				background-image: url(clear.png);
-				cursor: pointer;
-				border-right: 1px solid #cacaca;
-				border-top: 1px solid #cacaca;
-			}
-		</style>
+		<link rel="stylesheet" href="panel.css" />
 	</head>
 	<body>
-		<div id="log"></div>
-		<div id="clear" title="Clear"></div>
+		<form>
+			<input type="text" size="40" placeholder="some.frpc.method(arg1, arg2)" />
+			<input type="submit" value="Call FRPC" />
+		</form>
+		<table>
+			<thead><tr>
+				<td>Method</td>
+				<td>Params</td>
+				<td>HTTP</td>
+				<td>FRPC</td>
+				<td>Response</td>
+			</tr></thead>
+			<tbody></tbody>
+		</table>
+		<button id="clear">Clear</button>
 		<script type="module" src="panel.js"></script>
 	</body>
 </html>

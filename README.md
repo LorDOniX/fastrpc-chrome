@@ -11,6 +11,9 @@
 
 ## Changelog
 
+`1.3.0` - 6. 1. 2020
+- sync with Ondras version
+
 `1.2.4` - 23. 5. 2018
 - fix two buttons - response, request
 
