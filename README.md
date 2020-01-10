@@ -11,6 +11,9 @@
 
 ## Changelog
 
+`1.3.1` - 10. 1. 2020
+- add W button - open data in the new window with json viewer
+
 `1.3.0` - 6. 1. 2020
 - sync with Ondras version
 
