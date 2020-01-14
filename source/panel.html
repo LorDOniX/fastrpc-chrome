@@ -3,26 +3,11 @@
 	<head>
 		<meta charset="utf-8" />
 		<link rel="stylesheet" href="panel.css" />
-		<link rel="stylesheet" href="json-viewer.css" />
 	</head>
 	<body>
-		<form>
-			<input type="text" size="40" placeholder="some.frpc.method(arg1, arg2)" />
-			<input type="submit" value="Call FRPC" />
-		</form>
-		<table>
-			<thead><tr>
-				<td>Method</td>
-				<td>Params</td>
-				<td></td>
-				<td>HTTP</td>
-				<td>FRPC</td>
-				<td>Response</td>
-				<td></td>
-			</tr></thead>
-			<tbody></tbody>
-		</table>
-		<button id="clear">Clear</button>
+		<div id="log"></div>
+		<div id="clear" title="Clear"></div>
+		<script src="frpc.js"></script>
 		<script src="json-viewer.js"></script>
 		<script type="module" src="panel.js"></script>
 	</body>

@@ -11,6 +11,9 @@
 
 ## Changelog
 
+`1.3.2` - 14. 1. 2020
+- revert to original list ouptut
+
 `1.3.1` - 10. 1. 2020
 - add W button - open data in the new window with json viewer
 
