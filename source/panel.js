@@ -1,7 +1,6 @@
 import * as fastrpc from "./fastrpc.js";
 
 const devtools = (window.browser ? browser : chrome).devtools;
-const tbody = document.querySelector("tbody");
 const CUT_ARRAYS = 500;
 const MAX_CLONE_VALUE_LVL = 100;
 const dom = {
@@ -34,7 +33,6 @@ function stringToBytes(str, ct) {
 	}
 }
 
-
 function formatException(e) {
 	var result = document.createElement("strong");
 	result.style.color = "red";
@@ -48,7 +46,6 @@ function formatArrow(type) {
 	node.innerHTML = (type ? "←" : "→");
 	return node;
 };
-
 
 // format size in bytes
 function formatSize(size) {
@@ -253,7 +250,7 @@ function syncTheme() {
 	document.body.dataset.theme = devtools.panels.themeName;
 }
 
-function buildRow(har) {
+function buildLine(har) {
 	let requestRow = document.createElement("div");
 	requestRow.classList.add("log-line");
 	let responseRow = document.createElement("div");
@@ -507,17 +504,11 @@ function onRequestFinished(har) {
 	let requestOk = (request.postData && isFrpc(request.postData.mimeType));
 	let responseOk = isFrpc(response.content.mimeType);
 
-	if (requestOk || responseOk) { buildRow(har); }
+	if (requestOk || responseOk) { buildLine(har); }
 }
 
 function onNavigated() {
-	let rows = tbody.querySelectorAll("tr").length;
-	if (rows > 0) {
-		let empty = tbody.insertRow();
-		empty.className = "empty";
-		let td = empty.insertCell();
-		td.colSpan = 5;
-	}
+	dom.log.innerHTML = "";
 }
 
 devtools.network.onRequestFinished && devtools.network.onRequestFinished.addListener(onRequestFinished);

@@ -11,6 +11,9 @@
 
 ## Changelog
 
+`1.3.3` - 15. 1. 2020
+- page refresh clears all items
+
 `1.3.2` - 14. 1. 2020
 - revert to original list ouptut
 
