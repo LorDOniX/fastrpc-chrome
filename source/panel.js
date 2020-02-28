@@ -291,8 +291,12 @@ function buildRequest(row, request) {
 			};
 		} catch (e) {
 			item = {
-				data: e.message,
-				values: ["FRPC", arrow, formatException(e)]
+				data: {
+					error: e.message,
+					url: request.url,
+					data: request.postData.text
+				},
+				values: ["FRPC", arrow, request.url, formatException(e)]
 			};
 		}
 	} else {
@@ -335,8 +339,12 @@ async function buildResponse(row, response, har, requestData) {
 			};
 		} catch (e) {
 			item = {
-				data: e.message,
-				values: ["FRPC", arrow, formatException(e)]
+				data: {
+					error: e.message,
+					data: content,
+					url: requestData.url
+				},
+				values: ["FRPC", arrow, requestData.url, formatException(e)]
 			};
 		}
 	} else {
