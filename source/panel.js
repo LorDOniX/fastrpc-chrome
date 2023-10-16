@@ -57,7 +57,7 @@ function formatSize(size) {
 	var sizes = ["", "K", "M", "G", "T"];
 
 	lv = Math.min(sizes.length, lv);
-	
+
 	var value = lv > 0 ? (size / Math.pow(1024, lv)).toFixed(2) : size;
 
 	return value + " " + sizes[lv] + "B";
@@ -80,7 +80,7 @@ function formatCallParams(data, output, lvl) {
 		}
 		else if (item instanceof Array) {
 			output.appendChild(document.createTextNode("["));
-			
+
 			if (lvl > 1) {
 				output.appendChild(document.createTextNode("..."));
 			}
@@ -105,7 +105,7 @@ function formatCallParams(data, output, lvl) {
 		}
 		else if (typeof(item) == "object") {
 			output.appendChild(document.createTextNode("{"));
-			
+
 			if (lvl > 1) {
 				output.appendChild(document.createTextNode("..."));
 			}
@@ -413,7 +413,7 @@ function fillRow(row, item) {
 		});
 
 		w.document.title = p.textContent;
-		w.document.head.innerHTML = 
+		w.document.head.innerHTML =
 		'<meta charset="utf-8"><style>' +
 		'html { width: 100%; height: 100%; overflow: hidden; }\n' +
 		'body { font-size: 14px; height: 100%; overflow: scroll; }\n' +
@@ -518,6 +518,10 @@ function onRequestFinished(har) {
 function onNavigated() {
 	dom.log.innerHTML = "";
 }
+
+window.start = function(finished) {
+	finished.forEach(har => onRequestFinished(har));
+};
 
 devtools.network.onRequestFinished && devtools.network.onRequestFinished.addListener(onRequestFinished);
 devtools.network.onNavigated && devtools.network.onNavigated.addListener(onNavigated);
