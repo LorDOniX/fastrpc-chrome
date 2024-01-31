@@ -5,10 +5,13 @@ const CUT_ARRAYS = 500;
 const MAX_CLONE_VALUE_LVL = 100;
 const dom = {
 	clear: document.querySelector("#clear"),
-	log: document.querySelector("#log")
-}
+	header: document.querySelector("#header"),
+	log: document.querySelector("#log"),
+};
 
-function isFrpc(ct) { return ct && ct.match(/-frpc/i); }
+function isFrpc(ct) {
+	return ct && ct.match(/-frpc/i);
+}
 
 dom.clear.addEventListener("click", e => {
 	dom.log.innerHTML = "";
@@ -38,14 +41,14 @@ function formatException(e) {
 	result.style.color = "red";
 	result.innerHTML = e.message;
 	return result;
-};
+}
 
 function formatArrow(type) {
 	var node = document.createElement("strong");
 	node.style.color = (type ? "green" : "blue");
 	node.innerHTML = (type ? "←" : "→");
 	return node;
-};
+}
 
 // format size in bytes
 function formatSize(size) {
@@ -61,7 +64,33 @@ function formatSize(size) {
 	var value = lv > 0 ? (size / Math.pow(1024, lv)).toFixed(2) : size;
 
 	return value + " " + sizes[lv] + "B";
-};
+}
+
+function copyText(text) {
+	//Create a textbox field where we can insert text to.
+	var copyFrom = document.createElement("textarea");
+
+	//Set the text content to be the text you wished to copy.
+	copyFrom.textContent = text;
+
+	//Append the textbox field into the body as a child.
+	//"execCommand()" only works when there exists selected text, and the text is inside
+	//document.body (meaning the text is part of a valid rendered HTML element).
+	document.body.appendChild(copyFrom);
+
+	//Select all the text!
+	copyFrom.select();
+
+	//Execute command
+	document.execCommand('copy');
+
+	//(Optional) De-select the text using blur().
+	copyFrom.blur();
+
+	//Remove the textbox field from the document.body, so no other JavaScript nor
+	//other elements can get access to this.
+	document.body.removeChild(copyFrom);
+}
 
 function formatCallParams(data, output, lvl) {
 	lvl = lvl || 1;
@@ -435,27 +464,33 @@ function fillRow(row, item) {
 		w.document.body.appendChild(p);
 		w.document.body.appendChild(document.createElement("hr"));
 
+		var collapseLvl = document.createElement("input");
+		collapseLvl.value = "1";
+		collapseLvl.style.width = "50px";
+
 		var collapseAll = document.createElement("button");
-		collapseAll.innerHTML = "Collapse to level 1";
+		collapseAll.innerHTML = "Collapse to level";
 		collapseAll.classList.add("collapse-to-lvl1");
 		collapseAll.setAttribute("type", "button");
-		collapseAll.style.display = "inline-block";
 		collapseAll.addEventListener("click", function() {
-			jsonViewer.showJSON(jsonData, -1, 1, info.cutArrays);
+			jsonViewer.showJSON(jsonData, -1, Math.max(parseInt(collapseLvl.value), 0), info.cutArrays);
 		});
 
 		var expandAll = document.createElement("button");
 		expandAll.innerHTML = "Expand all";
-		expandAll.style.marginLeft = "10px";
-		expandAll.style.marginRight = "10px";
 		expandAll.setAttribute("type", "button");
-		expandAll.style.display = "inline-block";
 		expandAll.addEventListener("click", function() {
 			jsonViewer.showJSON(jsonData, undefined, undefined, info.cutArrays);
 		});
 
 		var buttonCover = document.createElement("div");
+
+		buttonCover.style.display = "flex";
+		buttonCover.style.flexDirection = "row";
+		buttonCover.style.gap = "10px";
+		buttonCover.style.alignContent = "center";
 		buttonCover.appendChild(collapseAll);
+		buttonCover.appendChild(collapseLvl);
 		buttonCover.appendChild(expandAll);
 
 		var copyButton = document.createElement("button");
@@ -464,29 +499,16 @@ function fillRow(row, item) {
 		copyButton.setAttribute("type", "button");
 		copyButton.style.display = "inline-block";
 		copyButton.addEventListener("click", function() {
-			try {
-				var value;
+			var value;
 
-				if (item.request) {
-					value = JSON.stringify(item.data);
-					value = item.method + "(" + value.substring(1, value.length - 1) + ")";
-				}
-				else {
-					value = JSON.stringify(item.data, null, "\t");
-				}
-
-				var copy = document.createElement("textarea");
-				copy.value = value;
-				copy.style.position = "absolute";
-				copy.style.left = "-1000px";
-				document.body.appendChild(copy);
-				copy.select();
-				document.execCommand('copy');
-			} catch (err) {
-				alert(err);
-				alert(err.message);
-				alert("Request/response wasn't copy");
+			if (item.request) {
+				value = JSON.stringify(item.data);
+				value = item.method + "(" + value.substring(1, value.length - 1) + ")";
+			} else {
+				value = JSON.stringify(item.data, null, "\t");
 			}
+
+			copyText(value);
 		});
 
 		buttonCover.appendChild(copyButton);

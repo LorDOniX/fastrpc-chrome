@@ -11,6 +11,10 @@
 
 ## Changelog
 
+`1.3.5` - 31. 1. 2024
+- new top header
+- fix clear items and tab reopen
+
 `1.3.4` - 16. 10. 2023
 - log request without panel visibility
 
