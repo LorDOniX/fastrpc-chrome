@@ -1,17 +1,16 @@
 import * as fastrpc from "./fastrpc.js";
 
-const devtools = (window.browser ? browser : chrome).devtools;
+const ext = (window.browser ? browser : chrome);
+const devtools = ext.devtools;
 const CUT_ARRAYS = 500;
 const MAX_CLONE_VALUE_LVL = 100;
+const FRPC_CONTENT_TYPE = /-frpc/i;
+const TYPE_CALL = 13;
 const dom = {
 	clear: document.querySelector("#clear"),
 	header: document.querySelector("#header"),
 	log: document.querySelector("#log"),
 };
-
-function isFrpc(ct) {
-	return ct && ct.match(/-frpc/i);
-}
 
 dom.clear.addEventListener("click", e => {
 	dom.log.innerHTML = "";
@@ -27,13 +26,74 @@ async function getContent(har) {
 	return atob(content);
 }
 
-function stringToBytes(str, ct) {
-	if (ct.match(/base64/i)) {
-		return atob(str).split("").map(x => x.charCodeAt(0));
-	} else {
-		let bytes = new Uint8Array(str.length);
-		return str.split("").map(x => x.charCodeAt(0));
+function headerValue(headers, name) {
+	let hit = (headers || []).find(header => header.name && header.name.toLowerCase() == name);
+	return hit ? hit.value : "";
+}
+
+function requestContentType(request) {
+	return (request.postData && request.postData.mimeType) || headerValue(request.headers, "content-type") || "";
+}
+
+function responseContentType(response) {
+	return (response.content && response.content.mimeType) || headerValue(response.headers, "content-type") || "";
+}
+
+function stringToBytes(str) {
+	let bytes = new Uint8Array(str.length);
+	for (let i = 0; i < str.length; i++) { bytes[i] = str.charCodeAt(i) & 0xFF; }
+	return bytes;
+}
+
+function hasMagic(bytes) {
+	return !!bytes && bytes.length > 1 && bytes[0] == 0xCA && bytes[1] == 0x11;
+}
+
+/*
+	The payload is either raw FRPC or base64 encoded FRPC. The content type is not
+	reliable (custom types, missing header), so the magic bytes decide.
+*/
+function frpcBytes(text, ct) {
+	if (!text) { return null; }
+
+	let raw = stringToBytes(text);
+	if (hasMagic(raw)) { return raw; }
+
+	let decoded = null;
+	try { decoded = stringToBytes(atob(text.replace(/\s/g, ""))); } catch (e) {}
+	if (hasMagic(decoded)) { return decoded; }
+
+	return (ct && /base64/i.test(ct)) ? decoded : raw;
+}
+
+// cheap check, so that bodies of unrelated POSTs are not base64 decoded
+function maybeFrpc(text, ct) {
+	if (ct && FRPC_CONTENT_TYPE.test(ct)) { return true; }
+	if (!text || text.length < 2) { return false; }
+	if (text.slice(0, 2) == "yh") { return true; }		// base64 encoded magic
+
+	let first = text.charCodeAt(0);
+	return first == 0xCA || first == 0xFFFD;			// raw magic, possibly mangled by the HAR text decoding
+}
+
+// method name straight from the bytes, without parsing the whole call
+function frpcCallName(bytes) {
+	if (!bytes || bytes.length < 6 || (bytes[4] >> 3) != TYPE_CALL) { return ""; }
+
+	let length = Math.min(bytes[5], bytes.length - 6);
+	let name = "";
+	for (let i = 0; i < length; i++) { name += String.fromCharCode(bytes[6 + i]); }
+	return name;
+}
+
+function requestBytes(har) {
+	if (!("__requestBytes" in har)) {
+		let text = har.request.postData && har.request.postData.text;
+		let ct = requestContentType(har.request);
+		har.__requestBytes = maybeFrpc(text, ct) ? frpcBytes(text, ct) : null;
 	}
+
+	return har.__requestBytes;
 }
 
 function formatException(e) {
@@ -288,21 +348,22 @@ function buildLine(har) {
 	dom.log.appendChild(requestRow);
 	dom.log.appendChild(responseRow);
 
-	let requestData = buildRequest(requestRow, har.request);
-	buildResponse(responseRow, har.response, har, requestData);
+	let requestData = buildRequest(requestRow, har);
+	buildResponse(responseRow, har, requestData);
 }
 
-function buildRequest(row, request) {
+function buildRequest(row, har) {
+	let request = har.request;
 	let item;
 	let requestData = {
 		method: "",
 		url: ""
 	};
 	let arrow = formatArrow(0);
+	let bytes = requestBytes(har);
 
-	if (request.postData && isFrpc(request.postData.mimeType)) {
+	if (bytes) {
 		try {
-			let bytes = stringToBytes(request.postData.text, request.postData.mimeType);
 			let data = fastrpc.parse(bytes);
 			if (data.method == "system.multicall") { data.params = data.params[0]; }
 			requestData.method = data.method;
@@ -323,7 +384,7 @@ function buildRequest(row, request) {
 				data: {
 					error: e.message,
 					url: request.url,
-					data: request.postData.text
+					data: request.postData && request.postData.text
 				},
 				values: ["FRPC", arrow, request.url, formatException(e)]
 			};
@@ -339,16 +400,29 @@ function buildRequest(row, request) {
 	return requestData;
 }
 
-async function buildResponse(row, response, har, requestData) {
+async function buildResponse(row, har, requestData) {
+	let response = har.response;
 	let item;
 	let arrow = formatArrow(1);
+	let ct = responseContentType(response);
 
-	if (response.status != 200) { row.classList.add("error"); } // non-200 http
+	if (response.status && response.status != 200) { row.classList.add("error"); } // non-200 http
 
-	if (isFrpc(response.content.mimeType)) {
-		let content = await getContent(har);
+	// the body was captured in the page, but the response is not observable there
+	if (har.__responseText === null) {
+		fillRow(row, {
+			data: "(response not captured)",
+			url: requestData.url,
+			values: ["FRPC", arrow, requestData.url, "(response not captured)"]
+		});
+		return;
+	}
+
+	let content = ("__responseText" in har) ? har.__responseText : await getContent(har);
+	let bytes = frpcBytes(content, ct);
+
+	if (hasMagic(bytes) || FRPC_CONTENT_TYPE.test(ct)) {
 		try {
-			let bytes = stringToBytes(content, response.content.mimeType);
 			let data = fastrpc.parse(bytes);
 			let str;
 			if (data instanceof Array) {
@@ -524,28 +598,116 @@ function fillRow(row, item) {
 	});
 }
 
+const HOOK_DELAY = 1200;
+const DEDUP_WINDOW = 8000;
+const networkKeys = [];
+
+// identifies one call well enough to recognise it coming from both sources
+function harKey(har) {
+	let bytes = requestBytes(har);
+	return [har.request.method || "POST", har.request.url, frpcCallName(bytes), bytes ? bytes.length : 0].join("|");
+}
+
+function pruneKeys(now) {
+	while (networkKeys.length && now - networkKeys[0].time > DEDUP_WINDOW) { networkKeys.shift(); }
+}
+
+function noteNetworkEntry(key) {
+	let now = Date.now();
+	pruneKeys(now);
+	networkKeys.push({ key, time: now, claimed: false });
+}
+
+// true when devtools.network already logged the very same call
+function claimNetworkEntry(key, time) {
+	pruneKeys(Date.now());
+
+	let hit = networkKeys.find(item => !item.claimed && item.key == key && Math.abs(item.time - time) < DEDUP_WINDOW);
+	if (hit) { hit.claimed = true; }
+
+	return !!hit;
+}
+
+function isFrpcHar(har) {
+	if (requestBytes(har)) { return true; }
+
+	return FRPC_CONTENT_TYPE.test(requestContentType(har.request)) || FRPC_CONTENT_TYPE.test(responseContentType(har.response));
+}
+
 function onRequestFinished(har) {
-	let { request, response } = har;
+	if (!isFrpcHar(har)) { return; }
 
-	request.headers.forEach(header => {
-		if (header.name.match(/X-Seznam-hashId/i)) { hashId = header.value; }
-	});
+	noteNetworkEntry(harKey(har));
+	buildLine(har);
+}
 
-	let requestOk = (request.postData && isFrpc(request.postData.mimeType));
-	let responseOk = isFrpc(response.content.mimeType);
+/* requests captured in the page itself (hook.js), for calls devtools.network never reports */
 
-	if (requestOk || responseOk) { buildLine(har); }
+function hookToHar(entry) {
+	let requestText = entry.request ? atob(entry.request) : "";
+	let responseText = entry.response ? atob(entry.response) : null;
+
+	return {
+		__hook: true,
+		__responseText: responseText,
+		request: {
+			url: entry.url,
+			method: entry.method || "POST",
+			headers: [{ name: "Content-Type", value: entry.requestType || "" }],
+			postData: { mimeType: entry.requestType || "", text: requestText }
+		},
+		response: {
+			status: entry.status || 0,
+			headers: [{ name: "Content-Type", value: entry.responseType || "" }],
+			content: { mimeType: entry.responseType || "", size: responseText ? responseText.length : 0 }
+		}
+	};
+}
+
+function onHookEntry(entry) {
+	let har = hookToHar(entry);
+
+	if (!isFrpcHar(har)) { return; }
+
+	let key = harKey(har);
+	// the page clock is not the devtools clock, compare the moments both sources delivered
+	let time = Date.now();
+
+	// devtools.network reports the same call a moment later, give it a chance first
+	setTimeout(() => {
+		if (claimNetworkEntry(key, time)) { return; }
+		buildLine(har);
+	}, HOOK_DELAY);
+}
+
+function connectHook() {
+	let port;
+
+	try {
+		port = ext.runtime.connect({ name: "fastrpc-devtools" });
+	} catch (e) {
+		return;
+	}
+
+	port.onMessage.addListener(onHookEntry);
+	// the background service worker may be shut down at any time
+	port.onDisconnect.addListener(() => setTimeout(connectHook, 1000));
+	port.postMessage({ type: "init", tabId: devtools.inspectedWindow.tabId });
 }
 
 function onNavigated() {
 	dom.log.innerHTML = "";
+	networkKeys.length = 0;
 }
+
+// devtools.js owns the network listener and forwards everything here
+window.onNetworkRequest = onRequestFinished;
 
 window.start = function(finished) {
 	finished.forEach(har => onRequestFinished(har));
 };
 
-devtools.network.onRequestFinished && devtools.network.onRequestFinished.addListener(onRequestFinished);
 devtools.network.onNavigated && devtools.network.onNavigated.addListener(onNavigated);
 devtools.panels.onThemeChanged && devtools.panels.onThemeChanged.addListener(syncTheme);
 syncTheme();
+connectHook();

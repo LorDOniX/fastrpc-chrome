@@ -11,6 +11,12 @@
 
 ## Changelog
 
+`1.4.0` - 3. 9. 2026
+- fix: requests carrying the `X-Seznam-hashId` header were silently dropped (assignment to an undeclared variable threw in the module scope of the panel)
+- FastRPC is now recognised by the magic bytes, not only by the `-frpc` content type - calls with a custom or missing `Content-Type` are logged as well
+- second capture source: `fetch`, `XMLHttpRequest` and `navigator.sendBeacon` are wrapped in the page itself, so calls that `chrome.devtools.network` never reports (out of process frames, beacons, calls made before the panel was opened) still show up; duplicates are dropped
+- the network listener is registered before the panel is created, nothing is lost on start up
+
 `1.3.5` - 31. 1. 2024
 - new top header
 - fix clear items and tab reopen
