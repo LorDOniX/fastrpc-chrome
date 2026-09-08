@@ -11,6 +11,12 @@
 
 ## Changelog
 
+`1.4.1` - 8. 9. 2026
+- filtering next to the title - a select for all items / requests only / responses only and a text filter over the url, the method name and the logged content, both applied to the list immediately
+- fix: the `fetch` wrapper handed the caller's `this` over to the native `fetch`, so a call made through a reference kept on an object (`api.fetch(url)`) failed with `Illegal invocation`; a receiver is now forwarded only when it really is a global one
+- the list is cleared by the page load itself - `hook.js` reports every top level document load through the same channel as the entries, so calls of the previous page can no longer land after the clear, be it from the deduplication delay or from the service worker buffer; a subframe navigation does not clear anything
+- a panel opened after a page load shows the calls of the current page only
+
 `1.4.0` - 3. 9. 2026
 - fix: requests carrying the `X-Seznam-hashId` header were silently dropped (assignment to an undeclared variable threw in the module scope of the panel)
 - FastRPC is now recognised by the magic bytes, not only by the `-frpc` content type - calls with a custom or missing `Content-Type` are logged as well

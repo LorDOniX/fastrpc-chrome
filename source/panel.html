@@ -6,7 +6,15 @@
 	</head>
 	<body>
 		<div id="header">
-			<span class="title">FRPC 1.4.0</span>
+			<span class="title">FRPC 1.4.1</span>
+			<div class="filters">
+				<select id="filter-type">
+					<option value="">Všechny položky</option>
+					<option value="request">Pouze požadavky</option>
+					<option value="response">Pouze odpovědi</option>
+				</select>
+				<input type="search" id="filter-text" placeholder="Filtr - URL, metoda, obsah" />
+			</div>
 			<button type="button" id="clear">
 				🚫 Smazat
 			</button>

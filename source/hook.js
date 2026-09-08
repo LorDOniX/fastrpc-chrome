@@ -99,13 +99,30 @@
 
 	/* fetch */
 
+	// fetch() only accepts a global object as its receiver, anything else throws
+	// "Illegal invocation". A caller that keeps the function on an object (api.fetch(url))
+	// or passes an explicit receiver would end up handing it to the native fetch, so the
+	// value is forwarded only when it really is a global - a global still has to be passed
+	// through, relative URLs are resolved against the receiver's document.
+	function fetchScope(scope) {
+		if (scope && scope.window === scope) { return scope; }
+		if (typeof WorkerGlobalScope != "undefined" && scope instanceof WorkerGlobalScope) { return scope; }
+		return window;
+	}
+
 	if (typeof origFetch == "function") {
 		window.fetch = function(input, init) {
 			let pending = null;
 
 			try { pending = prepareFetch(input, init); } catch (e) { pending = null; }
 
-			let result = origFetch.apply(this, arguments);
+			let result = null;
+
+			try {
+				result = origFetch.apply(fetchScope(this), arguments);
+			} catch (exc) {
+				//
+			}
 
 			if (pending) { finishFetch(pending, result); }
 
@@ -264,5 +281,15 @@
 				});
 			} catch (e) {}
 		})();
+	}
+
+	/*
+		Page load marker - tells the panel to drop the calls of the previous document.
+		It travels the same channel as the entries, so it is always delivered before the
+		first call of this page, even when the entries sat in the service worker for a
+		while. Subframes navigate on their own and must not clear the whole list.
+	*/
+	if (window === window.top) {
+		emit({ load: true, url: location.href, time: Date.now() });
 	}
 })();

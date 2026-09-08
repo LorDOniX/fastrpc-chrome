@@ -10,11 +10,51 @@ const dom = {
 	clear: document.querySelector("#clear"),
 	header: document.querySelector("#header"),
 	log: document.querySelector("#log"),
+	filterType: document.querySelector("#filter-type"),
+	filterText: document.querySelector("#filter-text"),
 };
 
 dom.clear.addEventListener("click", e => {
 	dom.log.innerHTML = "";
 });
+
+/*
+	Filtering hides the lines instead of dropping them, so that loosening the filter brings
+	them back without the requests having to be decoded again. Every line carries its own
+	text (url, method, params, response), the response line included - the method is in it
+	as well, only hidden by the stylesheet, so both lines of a call match the same query.
+*/
+let filterType = "";
+let filterText = "";
+
+function lineMatches(row) {
+	if (filterType && !row.classList.contains(filterType)) { return false; }
+	if (!filterText) { return true; }
+
+	return (row.dataset.text || "").indexOf(filterText) != -1;
+}
+
+function applyFilter(row) {
+	row.classList.toggle("filtered-out", !lineMatches(row));
+}
+
+function applyFilters() {
+	dom.log.querySelectorAll(".log-line").forEach(applyFilter);
+}
+
+dom.filterType.addEventListener("change", e => {
+	filterType = dom.filterType.value;
+	applyFilters();
+});
+
+function onFilterText() {
+	filterText = dom.filterText.value.trim().toLowerCase();
+	applyFilters();
+}
+
+dom.filterText.addEventListener("input", onFilterText);
+// the native clear button of a search input reports the emptied value as a search event
+dom.filterText.addEventListener("search", onFilterText);
 
 async function getContent(har) {
 	let ffPromise;
@@ -341,12 +381,16 @@ function syncTheme() {
 
 function buildLine(har) {
 	let requestRow = document.createElement("div");
-	requestRow.classList.add("log-line");
+	requestRow.classList.add("log-line", "request");
 	let responseRow = document.createElement("div");
-	responseRow.classList.add("log-line");
+	responseRow.classList.add("log-line", "response");
 
 	dom.log.appendChild(requestRow);
 	dom.log.appendChild(responseRow);
+
+	// still empty, a text filter hides them until fillRow knows what they contain
+	applyFilter(requestRow);
+	applyFilter(responseRow);
 
 	let requestData = buildRequest(requestRow, har);
 	buildResponse(responseRow, har, requestData);
@@ -481,6 +525,9 @@ function fillRow(row, item) {
 		row.appendChild(document.createTextNode(" "));
 	});
 
+	row.dataset.text = row.textContent.toLowerCase();
+	applyFilter(row);
+
 	row.addEventListener("click", e => {
 		var w = window.open("about:blank", "");
 		var jsonViewer = new JSONViewer();
@@ -601,6 +648,10 @@ function fillRow(row, item) {
 const HOOK_DELAY = 1200;
 const DEDUP_WINDOW = 8000;
 const networkKeys = [];
+// bumped on every page load, so that entries held for the dedup delay can be recognised as stale
+let pageEpoch = 0;
+// identity of the load hook.js reported last, the panel may learn about it long after it happened
+let lastLoad = null;
 
 // identifies one call well enough to recognise it coming from both sources
 function harKey(har) {
@@ -665,6 +716,14 @@ function hookToHar(entry) {
 }
 
 function onHookEntry(entry) {
+	if (!entry) { return; }
+
+	// hook.js reports the load of every top level document
+	if (entry.load) {
+		onPageLoad(entry);
+		return;
+	}
+
 	let har = hookToHar(entry);
 
 	if (!isFrpcHar(har)) { return; }
@@ -672,12 +731,30 @@ function onHookEntry(entry) {
 	let key = harKey(har);
 	// the page clock is not the devtools clock, compare the moments both sources delivered
 	let time = Date.now();
+	let epoch = pageEpoch;
 
 	// devtools.network reports the same call a moment later, give it a chance first
 	setTimeout(() => {
+		if (epoch != pageEpoch) { return; }	// the page was loaded again in the meantime
 		if (claimNetworkEntry(key, time)) { return; }
 		buildLine(har);
 	}, HOOK_DELAY);
+}
+
+/*
+	The marker of the page currently displayed can arrive at any time - it waits in the service
+	worker until the panel connects, which may be long after the requests of that very page were
+	listed. Only a load the panel has not seen yet clears the list.
+*/
+function onPageLoad(entry) {
+	let load = (entry.url || "") + "|" + (entry.time || 0);
+
+	if (load == lastLoad) { return; }
+
+	let known = (lastLoad !== null);
+	lastLoad = load;
+
+	if (known) { onNavigated(); }
 }
 
 function connectHook() {
@@ -696,6 +773,7 @@ function connectHook() {
 }
 
 function onNavigated() {
+	pageEpoch++;
 	dom.log.innerHTML = "";
 	networkKeys.length = 0;
 }

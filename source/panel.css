@@ -22,6 +22,10 @@ body {
 	display: none;
 }
 
+#log .log-line.filtered-out {
+	display: none;
+}
+
 #header {
 	display: flex;
 	justify-content: space-between;
@@ -34,6 +38,18 @@ body {
 
 #header .title {
 	font-weight: bold;
+}
+
+#header .filters {
+	display: flex;
+	flex: 1;
+	gap: 10px;
+	align-items: center;
+}
+
+#header .filters #filter-text {
+	flex: 1;
+	min-width: 80px;
 }
 
 #clear {
