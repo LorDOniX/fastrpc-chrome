@@ -380,10 +380,15 @@ function syncTheme() {
 }
 
 function buildLine(har) {
+	let started = harStarted(har);
 	let requestRow = document.createElement("div");
 	requestRow.classList.add("log-line", "request");
 	let responseRow = document.createElement("div");
 	responseRow.classList.add("log-line", "response");
+
+	// the load marker of the displayed document may arrive later, the lines have to be datable
+	requestRow.dataset.started = started;
+	responseRow.dataset.started = started;
 
 	dom.log.appendChild(requestRow);
 	dom.log.appendChild(responseRow);
@@ -652,6 +657,8 @@ const networkKeys = [];
 let pageEpoch = 0;
 // identity of the load hook.js reported last, the panel may learn about it long after it happened
 let lastLoad = null;
+// when the displayed document started, calls older than that were made by the page before it
+let pageLoadedAt = 0;
 
 // identifies one call well enough to recognise it coming from both sources
 function harKey(har) {
@@ -687,6 +694,7 @@ function isFrpcHar(har) {
 
 function onRequestFinished(har) {
 	if (!isFrpcHar(har)) { return; }
+	if (fromPreviousPage(har)) { return; }
 
 	noteNetworkEntry(harKey(har));
 	buildLine(har);
@@ -700,6 +708,7 @@ function hookToHar(entry) {
 
 	return {
 		__hook: true,
+		__time: entry.time || 0,
 		__responseText: responseText,
 		request: {
 			url: entry.url,
@@ -727,6 +736,7 @@ function onHookEntry(entry) {
 	let har = hookToHar(entry);
 
 	if (!isFrpcHar(har)) { return; }
+	if (fromPreviousPage(har)) { return; }
 
 	let key = harKey(har);
 	// the page clock is not the devtools clock, compare the moments both sources delivered
@@ -741,10 +751,40 @@ function onHookEntry(entry) {
 	}, HOOK_DELAY);
 }
 
+/* page loads - only a new document clears the list, an url change made by the page does not */
+
+// the moment the call was made; the page clock and the devtools clock are the same wall clock
+function harStarted(har) {
+	if ("__time" in har) { return har.__time; }
+
+	let started = Date.parse(har.startedDateTime || "");
+	return isNaN(started) ? 0 : started;
+}
+
+// both sources keep reporting calls of the document that has already been left behind
+function fromPreviousPage(har) {
+	let started = harStarted(har);
+
+	return !!pageLoadedAt && !!started && started < pageLoadedAt;
+}
+
+function dropPreviousPage() {
+	if (!pageLoadedAt) { return; }
+
+	dom.log.querySelectorAll(".log-line").forEach(row => {
+		let started = Number(row.dataset.started);
+		if (started && started < pageLoadedAt) { row.remove(); }
+	});
+}
+
 /*
-	The marker of the page currently displayed can arrive at any time - it waits in the service
-	worker until the panel connects, which may be long after the requests of that very page were
-	listed. Only a load the panel has not seen yet clears the list.
+	hook.js reports the start of every top level document, the History API url changes of a
+	single page application among them are not reported at all - those must keep the list.
+
+	The marker of the page currently displayed can arrive at any time, it waits in the service
+	worker until the panel connects, which may be long after the calls of that very page were
+	listed. Such a first marker only tells which calls are older than the displayed document,
+	a load the panel lived through wipes everything.
 */
 function onPageLoad(entry) {
 	let load = (entry.url || "") + "|" + (entry.time || 0);
@@ -752,9 +792,16 @@ function onPageLoad(entry) {
 	if (load == lastLoad) { return; }
 
 	let known = (lastLoad !== null);
-	lastLoad = load;
 
-	if (known) { onNavigated(); }
+	lastLoad = load;
+	pageLoadedAt = entry.time || 0;
+
+	if (known) {
+		clearLines();
+		return;
+	}
+
+	dropPreviousPage();
 }
 
 function connectHook() {
@@ -772,7 +819,7 @@ function connectHook() {
 	port.postMessage({ type: "init", tabId: devtools.inspectedWindow.tabId });
 }
 
-function onNavigated() {
+function clearLines() {
 	pageEpoch++;
 	dom.log.innerHTML = "";
 	networkKeys.length = 0;
@@ -785,7 +832,11 @@ window.start = function(finished) {
 	finished.forEach(har => onRequestFinished(har));
 };
 
-devtools.network.onNavigated && devtools.network.onNavigated.addListener(onNavigated);
+/*
+	devtools.network.onNavigated is deliberately not used - it fires for History API url
+	changes as well, which would wipe the calls of a single page application that never
+	left its document. The load marker of hook.js is the only clearing signal.
+*/
 devtools.panels.onThemeChanged && devtools.panels.onThemeChanged.addListener(syncTheme);
 syncTheme();
 connectHook();

@@ -21,10 +21,8 @@ function onRequestFinished(har) {
 // registered before the panel exists, otherwise the first requests are lost
 network && network.onRequestFinished && network.onRequestFinished.addListener(onRequestFinished);
 
-// a panel opened later shows the current page only, requests kept from before the load are dropped
-network && network.onNavigated && network.onNavigated.addListener(function() {
-	buffered.length = 0;
-});
+// the buffer is not dropped on navigation - the event fires for History API url changes too and
+// the panel itself drops what predates the load hook.js reports
 
 // panel.js is a module, so its window callbacks may not be defined yet when the panel is shown
 function handOff(shownWindow) {

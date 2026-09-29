@@ -11,10 +11,14 @@
 
 ## Changelog
 
+`1.4.2` - 29. 9. 2026
+- update to frcp3
+
 `1.4.1` - 8. 9. 2026
 - filtering next to the title - a select for all items / requests only / responses only and a text filter over the url, the method name and the logged content, both applied to the list immediately
 - fix: the `fetch` wrapper handed the caller's `this` over to the native `fetch`, so a call made through a reference kept on an object (`api.fetch(url)`) failed with `Illegal invocation`; a receiver is now forwarded only when it really is a global one
-- the list is cleared by the page load itself - `hook.js` reports every top level document load through the same channel as the entries, so calls of the previous page can no longer land after the clear, be it from the deduplication delay or from the service worker buffer; a subframe navigation does not clear anything
+- the list is cleared by the document load itself - `hook.js` reports the start of every top level document through the same channel as the entries; an url change made by the History API keeps the list, a navigation of a subframe as well (`devtools.network.onNavigated` is not used any more, it does not tell a new document from a changed url)
+- calls of the document that was left behind are not listed at all - neither the ones held back by the deduplication delay, nor the ones kept in the service worker while the panel was disconnected
 - a panel opened after a page load shows the calls of the current page only
 
 `1.4.0` - 3. 9. 2026
